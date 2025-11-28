@@ -146,6 +146,30 @@ function WalletStateController({ children }: { children: ReactNode }) {
       const { vaultTypeToRiskLevel } = await import("@/lib/utils");
       const riskLevel = vaultTypeToRiskLevel(vaultType);
 
+      // Check USDC allowance before deposit
+      const { createPublicClient, http } = await import("viem");
+      const publicClient = createPublicClient({
+        chain: liskSepolia,
+        transport: http(),
+      });
+
+      const allowance = await publicClient.readContract({
+        address: CONTRACTS.MOCK_USDC,
+        abi: MOCK_USDC_ABI,
+        functionName: "allowance",
+        args: [address, CONTRACTS.ROUTER],
+      }) as bigint;
+
+      if (allowance < amount) {
+        const error = `Insufficient ${assetSymbol} allowance. Please approve ${assetSymbol} spending first.`;
+        toast({
+          variant: "destructive",
+          title: "Approval Required",
+          description: error,
+        });
+        throw new Error(error);
+      }
+
       toast({
         title: "Queuing Deposit...",
         description: `Your deposit will be processed in the next batch`,
@@ -404,7 +428,7 @@ export function Web3Provider({ children }: Web3ProviderProps) {
   return (
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
-        <XellarKitProvider config={config} theme={darkTheme}>
+        <XellarKitProvider theme={darkTheme}>
           <WalletStateController>
             {mounted ? children : null}
           </WalletStateController>

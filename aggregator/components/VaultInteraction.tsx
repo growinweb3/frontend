@@ -42,7 +42,7 @@ export function VaultInteraction({ vaultType, assetAddress, assetSymbol, assetDe
   // Contract hooks
   const { data: tokenBalance } = useTokenBalance(assetAddress, address)
   const { data: vaultBalance } = useUserBalance(address, assetAddress)
-  const { data: allowance } = useTokenAllowance(assetAddress, address)
+  const { data: allowance, refetch: refetchAllowance } = useTokenAllowance(assetAddress, address)
   const { data: apy } = useAssetAPY(assetAddress)
   const { data: vaultAddress } = useVaultAddress(vaultType)
   const { data: minDepositAmount } = useMinDepositAmount()
@@ -50,8 +50,9 @@ export function VaultInteraction({ vaultType, assetAddress, assetSymbol, assetDe
   // Check if vault is initialized (not zero address)
   const isVaultInitialized = vaultAddress && vaultAddress !== '0x0000000000000000000000000000000000000000'
 
-  // Calculate if approval is needed
-  const needsApproval = depositAmount && allowance && parseUnits(depositAmount, assetDecimals) > allowance
+  // Calculate if approval is needed (treat undefined allowance as 0)
+  const currentAllowance = allowance || 0
+  const needsApproval = depositAmount && parseUnits(depositAmount, assetDecimals) > currentAllowance
 
   // Handle max button clicks
   const handleMaxDeposit = useCallback(() => {
@@ -76,10 +77,12 @@ export function VaultInteraction({ vaultType, assetAddress, assetSymbol, assetDe
         spender: CONTRACTS.ROUTER,
         amount,
       })
+      // Refetch allowance after successful approval
+      setTimeout(() => refetchAllowance(), 2000) // Wait 2s for blockchain confirmation
     } catch (error) {
       console.error('Approval failed:', error)
     }
-  }, [approveToken, assetAddress, depositAmount, assetDecimals])
+  }, [approveToken, assetAddress, depositAmount, assetDecimals, refetchAllowance])
 
   const handleDeposit = useCallback(async () => {
     if (!depositAmount) return
@@ -114,6 +117,12 @@ export function VaultInteraction({ vaultType, assetAddress, assetSymbol, assetDe
   }, [withdraw, vaultType, withdrawAmount, assetDecimals, assetSymbol])
 
   // Validation
+  const isAmountValid = depositAmount && 
+    parseFloat(depositAmount) > 0 &&
+    (!minDepositAmount || parseUnits(depositAmount, assetDecimals) >= minDepositAmount)
+  
+  const hasBalance = tokenBalance && parseUnits(depositAmount || '0', assetDecimals) <= tokenBalance
+  
   const isDepositValid = depositAmount && 
     tokenBalance && 
     parseUnits(depositAmount, assetDecimals) <= tokenBalance &&
@@ -260,7 +269,7 @@ export function VaultInteraction({ vaultType, assetAddress, assetSymbol, assetDe
             {needsApproval ? (
               <Button
                 onClick={handleApprove}
-                disabled={!isDepositValid || isTransacting}
+                disabled={!isAmountValid || !hasBalance || !isVaultInitialized || isTransacting}
                 className="w-full bg-orange-600 hover:bg-orange-700"
               >
                 {isTransacting ? (
