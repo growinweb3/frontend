@@ -60,7 +60,8 @@ export const VAULT_CONFIGS: Record<VaultType, VaultConfig> = {
       aave: 80,
       compound: 20,
     },
-    rebalanceThreshold: 5, // Rebalance if allocation drifts by 5%
+    rebalanceThreshold: 6, // Protocol rebalancing threshold
+    batchScheduleHours: 6, // Batch deposits every 6 hours to reduce gas fees
   },
   [VaultType.BALANCED]: {
     type: VaultType.BALANCED,
@@ -75,7 +76,8 @@ export const VAULT_CONFIGS: Record<VaultType, VaultConfig> = {
       aave: 50,
       compound: 50,
     },
-    rebalanceThreshold: 7,
+    rebalanceThreshold: 4, // Protocol rebalancing threshold
+    batchScheduleHours: 6, // Batch deposits every 6 hours to reduce gas fees
   },
   [VaultType.AGGRESSIVE]: {
     type: VaultType.AGGRESSIVE,
@@ -90,7 +92,8 @@ export const VAULT_CONFIGS: Record<VaultType, VaultConfig> = {
       aave: 30,
       compound: 70,
     },
-    rebalanceThreshold: 10,
+    rebalanceThreshold: 2, // Protocol rebalancing threshold
+    batchScheduleHours: 6, // Batch deposits every 6 hours to reduce gas fees
   },
 }
 

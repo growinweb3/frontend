@@ -3,6 +3,8 @@ import { PageLayout } from "@/components/page-layout"
 import { FloatingNav } from "@/components/floating-nav"
 import { Card } from "@/components/ui/card"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
+import { BatchCountdown } from "@/components/batch-countdown"
+import { Users, ArrowRight, Clock } from "lucide-react"
 
 export default function Transparency() {
   return (
@@ -33,6 +35,69 @@ export default function Transparency() {
               <p className="text-sm text-cyan-400 mt-1">USDC risk-adjusted</p>
             </Card>
           </div>
+
+          {/* Batch Deposit System */}
+          <Card className="bg-gradient-to-br from-emerald-500/10 to-cyan-500/10 border-emerald-500/20">
+            <div className="p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <Clock className="w-5 h-5 text-emerald-400" />
+                <h2 className="text-xl font-semibold">Batch Deposit System</h2>
+              </div>
+              <p className="text-white/80 mb-6">
+                We use a batch execution system to dramatically reduce gas costs. Instead of deploying each user's deposit immediately, we aggregate multiple deposits and execute them together every 6 hours.
+              </p>
+              
+              {/* Flow Diagram */}
+              <div className="mb-6 p-4 rounded-xl bg-black/20">
+                <div className="flex items-center justify-between gap-4 max-w-3xl mx-auto">
+                  <div className="flex-1 text-center">
+                    <div className="w-16 h-16 mx-auto mb-2 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center">
+                      <Users className="w-8 h-8 text-cyan-400" />
+                    </div>
+                    <p className="text-sm font-medium text-white">User Deposits</p>
+                    <p className="text-xs text-white/60 mt-1">Multiple users deposit USDC</p>
+                  </div>
+                  <ArrowRight className="w-6 h-6 text-emerald-400 flex-shrink-0" />
+                  <div className="flex-1 text-center">
+                    <div className="w-16 h-16 mx-auto mb-2 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center">
+                      <Clock className="w-8 h-8 text-emerald-400" />
+                    </div>
+                    <p className="text-sm font-medium text-white">Vault Holds</p>
+                    <p className="text-xs text-white/60 mt-1">Waits for next 6h batch</p>
+                  </div>
+                  <ArrowRight className="w-6 h-6 text-emerald-400 flex-shrink-0" />
+                  <div className="flex-1 text-center">
+                    <div className="w-16 h-16 mx-auto mb-2 rounded-2xl bg-gradient-to-br from-blue-500/20 to-emerald-500/20 border border-emerald-500/40 flex items-center justify-center">
+                      <div className="text-2xl">🎯</div>
+                    </div>
+                    <p className="text-sm font-medium text-white">Batch Deploy</p>
+                    <p className="text-xs text-white/60 mt-1">All funds → Protocols</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Next Batch Countdown */}
+              <div className="mb-4 p-4 rounded-xl bg-black/20 border border-emerald-500/20">
+                <BatchCountdown variant="compact" showIcon={true} className="justify-center" />
+              </div>
+
+              {/* Benefits */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="p-4 rounded-xl bg-black/20">
+                  <p className="text-2xl font-bold text-emerald-400 mb-1">~90%</p>
+                  <p className="text-sm text-white/80">Gas cost reduction per user</p>
+                </div>
+                <div className="p-4 rounded-xl bg-black/20">
+                  <p className="text-2xl font-bold text-cyan-400 mb-1">Every 6h</p>
+                  <p className="text-sm text-white/80">Batch execution schedule</p>
+                </div>
+                <div className="p-4 rounded-xl bg-black/20">
+                  <p className="text-2xl font-bold text-purple-400 mb-1">$0.50</p>
+                  <p className="text-sm text-white/80">Avg. gas fee per deposit</p>
+                </div>
+              </div>
+            </div>
+          </Card>
 
           {/* Risk Analysis */}
           <PortfolioDistribution />
@@ -121,8 +186,11 @@ export default function Transparency() {
                   <span className="font-medium">10% on profits</span>
                 </div>
                 <div className="flex justify-between items-center p-3 rounded-lg bg-white/5">
-                  <span className="text-white/80">Gas Optimization Savings</span>
-                  <span className="font-medium text-emerald-400">-$2.50 average</span>
+                  <div>
+                    <span className="text-white/80">Gas Optimization Savings</span>
+                    <p className="text-xs text-white/50 mt-0.5">Via 6-hour batch execution system</p>
+                  </div>
+                  <span className="font-medium text-emerald-400">~$4.50 saved</span>
                 </div>
                 <div className="flex justify-between items-center p-3 rounded-lg bg-white/5">
                   <span className="text-white/80">Protocol Fees (passed through)</span>

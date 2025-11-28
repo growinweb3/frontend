@@ -2,7 +2,8 @@
 
 import { VaultType, Protocol } from "@/lib/types"
 import { VAULT_CONFIGS, PROTOCOLS } from "@/lib/constants"
-import { X, TrendingUp, AlertCircle, Clock, RefreshCw } from "lucide-react"
+import { X, TrendingUp, AlertCircle, Clock, RefreshCw, ArrowRight } from "lucide-react"
+import { BatchCountdown } from "./batch-countdown"
 
 interface VaultDetailsProps {
   vaultType: VaultType
@@ -63,8 +64,15 @@ export function VaultDetails({ vaultType, onClose }: VaultDetailsProps) {
             </div>
           </div>
           <div className="rounded-2xl p-4" style={{ background: "rgba(255, 255, 255, 0.03)" }}>
-            <div className="text-xs text-white/50 mb-1">Rebalance Threshold</div>
-            <div className="text-lg font-bold text-white">{config.rebalanceThreshold}%</div>
+            <div className="text-xs text-white/50 mb-1">Batch Schedule</div>
+            <div className="text-lg font-bold text-white">Every {config.batchScheduleHours}h</div>
+          </div>
+        </div>
+
+        {/* Batch Countdown */}
+        <div className="mb-8">
+          <div className="rounded-2xl p-6" style={{ background: "rgba(16, 185, 129, 0.05)", border: "1px solid rgba(16, 185, 129, 0.2)" }}>
+            <BatchCountdown variant="large" showIcon={true} className="w-full" />
           </div>
         </div>
 
@@ -114,22 +122,27 @@ export function VaultDetails({ vaultType, onClose }: VaultDetailsProps) {
           </h3>
           <div className="space-y-3 text-sm">
             <div className="flex items-start gap-3 text-white/70">
-              <RefreshCw className="w-4 h-4 mt-0.5 flex-shrink-0" />
+              <Clock className="w-4 h-4 mt-0.5 flex-shrink-0 text-emerald-400" />
               <div>
-                <div className="font-medium text-white mb-1">Automatic Rebalancing</div>
-                <div>
-                  The vault automatically rebalances when allocations drift by more than {config.rebalanceThreshold}%
-                  from target percentages.
+                <div className="font-medium text-white mb-1">Batch Deposit System</div>
+                <div className="mb-2">
+                  Your deposits are held in the vault and distributed to protocols every {config.batchScheduleHours} hours together with other users' deposits. This batching mechanism significantly reduces gas fees for everyone.
+                </div>
+                <div className="flex items-center gap-2 text-xs">
+                  <span className="px-2 py-1 rounded bg-white/5 border border-white/10">Your Deposit</span>
+                  <ArrowRight className="w-3 h-3" />
+                  <span className="px-2 py-1 rounded bg-white/5 border border-white/10">Vault</span>
+                  <ArrowRight className="w-3 h-3" />
+                  <span className="px-2 py-1 rounded bg-emerald-500/20 border border-emerald-500/30">Batch to Protocols</span>
                 </div>
               </div>
             </div>
             <div className="flex items-start gap-3 text-white/70">
-              <Clock className="w-4 h-4 mt-0.5 flex-shrink-0" />
+              <RefreshCw className="w-4 h-4 mt-0.5 flex-shrink-0" />
               <div>
                 <div className="font-medium text-white mb-1">Yield Optimization</div>
                 <div>
-                  Continuously monitors protocol performance and adjusts allocations to maximize returns within risk
-                  parameters.
+                  Continuously monitors protocol performance and adjusts allocations to maximize returns within risk parameters. The AI automatically rebalances when needed.
                 </div>
               </div>
             </div>

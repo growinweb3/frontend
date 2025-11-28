@@ -1,5 +1,7 @@
 "use client"
 
+import { formatNextBatchTime } from "@/lib/utils"
+
 export function AiInsightCard() {
   return (
     <div
@@ -41,8 +43,11 @@ export function AiInsightCard() {
             Moving <span className="text-emerald-400 font-semibold">$3,200 USDC</span> from Conservative to Balanced Vault could increase APY by{" "}
             <span className="text-emerald-400 font-semibold">1.3%</span> while maintaining reasonable risk.
           </p>
+          <p className="text-white/50 text-xs mt-2">
+            Changes will be executed in the next batch at {formatNextBatchTime()}
+          </p>
           <button className="mt-4 px-4 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-sm font-medium hover:bg-emerald-500/20 transition-all hover:border-emerald-500/50">
-            Rebalance Vaults
+            Schedule Rebalance
           </button>
         </div>
       </div>

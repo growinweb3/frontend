@@ -1,4 +1,5 @@
 import { VaultType } from "@/lib/types"
+import { BatchCountdown } from "./batch-countdown"
 
 const distributions = [
   { token: "USDC", vault: "Conservative Vault", vaultType: VaultType.CONSERVATIVE, amount: "$6,300.00", percentage: 40, apy: "4.2%", risk: 2 },
@@ -19,9 +20,9 @@ export function PortfolioDistribution() {
     >
       <div className="flex items-center justify-between mb-5">
         <h2 className="text-lg font-semibold font-sans text-white">Portfolio Distribution</h2>
-        <button className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-sm font-medium hover:bg-white/10 transition-all">
-          Rebalance
-        </button>
+        <div className="px-4 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
+          <BatchCountdown variant="compact" showIcon={true} />
+        </div>
       </div>
 
       <div className="space-y-4">

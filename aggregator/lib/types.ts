@@ -18,7 +18,9 @@ export interface VaultConfig {
     aave: number
     compound: number
   }
-  rebalanceThreshold: number
+  rebalanceThreshold: number // Legacy field - used for protocol rebalancing logic
+  batchScheduleHours: number // Batch deposit interval in hours
+  nextBatchTime?: Date // Calculated next batch execution time
 }
 
 // Protocol Types

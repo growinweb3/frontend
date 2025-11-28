@@ -2,7 +2,8 @@
 
 import { VaultType } from "@/lib/types"
 import { VAULT_CONFIGS, VAULT_COLORS, RISK_COLORS } from "@/lib/constants"
-import { TrendingUp, Shield, Zap, DollarSign } from "lucide-react"
+import { TrendingUp, Shield, Zap, DollarSign, Clock } from "lucide-react"
+import { BatchCountdown } from "./batch-countdown"
 
 interface VaultCardProps {
   vaultType: VaultType
@@ -99,17 +100,32 @@ export function VaultCard({ vaultType, totalDeposited = 0, currentAPY, userDepos
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 gap-3 mb-6">
+      <div className="grid grid-cols-2 gap-3 mb-4">
         <div className="rounded-xl p-3" style={{ background: "rgba(255, 255, 255, 0.02)" }}>
-          <div className="text-xs text-white/50 mb-1">Total Deposited</div>
-          <div className="text-base font-bold text-white font-mono">${totalDeposited.toLocaleString()}</div>
+          <div className="text-xs text-white/50 mb-1">Deployed to Protocols</div>
+          <div className="text-base font-bold text-white font-mono">${(totalDeposited * 0.85).toLocaleString()}</div>
         </div>
-        {userDeposit > 0 && (
+        <div className="rounded-xl p-3" style={{ background: "rgba(16, 185, 129, 0.05)", border: "1px solid rgba(16, 185, 129, 0.15)" }}>
+          <div className="text-xs text-emerald-400/70 mb-1 flex items-center gap-1">
+            <Clock className="w-3 h-3" />
+            Pending Batch
+          </div>
+          <div className="text-base font-bold text-emerald-400 font-mono">${(totalDeposited * 0.15).toLocaleString()}</div>
+        </div>
+      </div>
+
+      {userDeposit > 0 && (
+        <div className="mb-4">
           <div className="rounded-xl p-3" style={{ background: "rgba(255, 255, 255, 0.02)" }}>
-            <div className="text-xs text-white/50 mb-1">Your Deposit</div>
+            <div className="text-xs text-white/50 mb-1">Your Total Deposit</div>
             <div className="text-base font-bold text-white font-mono">${userDeposit.toLocaleString()}</div>
           </div>
-        )}
+        </div>
+      )}
+
+      {/* Batch Countdown */}
+      <div className="mb-6 p-3 rounded-xl" style={{ background: "rgba(16, 185, 129, 0.03)", border: "1px solid rgba(16, 185, 129, 0.1)" }}>
+        <BatchCountdown variant="compact" showIcon={true} className="justify-center" />
       </div>
 
       {/* Action Button */}
@@ -118,8 +134,8 @@ export function VaultCard({ vaultType, totalDeposited = 0, currentAPY, userDepos
         className={`w-full py-3 rounded-xl bg-gradient-to-r from-${vaultColor}-500/10 to-${vaultColor}-400/10 border border-${vaultColor}-500/20 text-${vaultColor}-400 font-medium transition-all duration-300 hover:from-${vaultColor}-500/20 hover:to-${vaultColor}-400/20 hover:border-${vaultColor}-500/40`}
       >
         <div className="flex items-center justify-center gap-2">
-          <DollarSign className="w-4 h-4" />
-          {userDeposit > 0 ? "Add More USDC" : "Deposit USDC"}
+          {/* <DollarSign className="w-4 h-4" /> */}
+          {userDeposit > 0 ? "Details" : "Details"}
         </div>
       </button>
     </div>

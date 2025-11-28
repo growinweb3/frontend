@@ -34,9 +34,9 @@ export default function Settings() {
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
                   <Label htmlFor="auto-rebalance" className="text-base">
-                    Auto-Rebalance
+                    Auto-Batch Deposits
                   </Label>
-                  <p className="text-sm text-white/60">Automatically rebalance your portfolio based on AI recommendations</p>
+                  <p className="text-sm text-white/60">Automatically include your deposits in scheduled 6-hour batch executions</p>
                 </div>
                 <Switch id="auto-rebalance" checked={autoRebalance} onCheckedChange={setAutoRebalance} />
               </div>
@@ -67,7 +67,7 @@ export default function Settings() {
                   <Label htmlFor="gas-optimization" className="text-base">
                     Gas Optimization
                   </Label>
-                  <p className="text-sm text-white/60">Wait for lower gas prices before executing transactions</p>
+                  <p className="text-sm text-white/60">Batch deposits every 6 hours with other users to reduce gas fees by ~90%</p>
                 </div>
                 <Switch id="gas-optimization" defaultChecked />
               </div>
