@@ -5,6 +5,7 @@ import { FeatureCards } from "@/components/landing/feature-cards"
 import { VaultComparison } from "@/components/landing/vault-comparison"
 import { StatsCounter } from "@/components/landing/stats-counter"
 import { CTASection } from "@/components/landing/cta-section"
+import { ConnectWallet } from "@/components/ConnectWallet"
 
 export default function Home() {
   const handleConnectWallet = () => {
@@ -28,12 +29,7 @@ export default function Home() {
               <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-500" />
               <span className="text-xl font-bold text-white">Growish</span>
             </div>
-            <button
-              onClick={handleConnectWallet}
-              className="px-6 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white font-medium transition-all hover:shadow-lg hover:shadow-emerald-500/20"
-            >
-              Connect Wallet
-            </button>
+            <ConnectWallet />
           </div>
         </div>
       </header>

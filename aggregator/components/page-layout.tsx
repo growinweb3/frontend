@@ -1,3 +1,5 @@
+import { ConnectWallet } from "./ConnectWallet";
+
 export function PageLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-[#050510] text-white overflow-hidden relative">
@@ -17,9 +19,7 @@ export function PageLayout({ children }: { children: React.ReactNode }) {
             </div>
             <span className="font-sans text-xl font-bold tracking-tight">Growish</span>
           </div>
-          <button className="px-5 py-2.5 rounded-full bg-white/5 border border-white/10 backdrop-blur-sm text-sm font-medium hover:bg-white/10 transition-all hover:border-white/20 hover:shadow-[0_0_20px_rgba(16,185,129,0.15)]">
-            Connect Wallet
-          </button>
+          <ConnectWallet />
         </header>
 
         {children}

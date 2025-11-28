@@ -1,22 +1,21 @@
 "use client"
 
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts"
-
-const data = [
-  { date: "Jan", value: 10000 },
-  { date: "Feb", value: 10200 },
-  { date: "Mar", value: 10800 },
-  { date: "Apr", value: 11200 },
-  { date: "May", value: 11800 },
-  { date: "Jun", value: 12400 },
-  { date: "Jul", value: 13100 },
-  { date: "Aug", value: 13800 },
-  { date: "Sep", value: 14200 },
-  { date: "Oct", value: 14900 },
-  { date: "Nov", value: 15750 },
-]
+import { usePortfolioValue, useFormatTokenAmount } from "@/hooks/useContracts"
+import { useAccount } from "wagmi"
 
 export function PortfolioChart() {
+  const { address } = useAccount()
+  const { data: portfolioValue } = usePortfolioValue(address)
+  const { formatAmount } = useFormatTokenAmount()
+
+  // Current snapshot - historical data will be fetched from blockchain events in future
+  const currentValue = portfolioValue ? parseFloat(formatAmount(portfolioValue, 6)) : 0
+  
+  // Generate single data point for current snapshot
+  const data = [
+    { date: "Current", value: currentValue },
+  ]
   return (
     <div
       className="h-full min-h-[280px] rounded-3xl backdrop-blur-xl p-6 hover:border-white/15 transition-all duration-300"
@@ -25,25 +24,17 @@ export function PortfolioChart() {
       <div className="flex items-center justify-between mb-4">
         <div>
           <h2 className="text-lg font-semibold font-sans text-white">Portfolio Performance</h2>
-          <p className="text-white/40 text-sm">Last 11 months</p>
+          <p className="text-white/40 text-sm">Current Snapshot • Historical data coming soon</p>
         </div>
-        <div className="flex gap-2">
-          {["1M", "3M", "1Y", "ALL"].map((period) => (
-            <button
-              key={period}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                period === "1Y" ? "bg-white/10 text-white" : "text-white/40 hover:text-white/70 hover:bg-white/5"
-              }`}
-            >
-              {period}
-            </button>
-          ))}
+        <div className="px-3 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 text-xs font-medium">
+          ${currentValue.toLocaleString()}
         </div>
       </div>
 
-      <div className="h-[200px] w-full">
-        <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+      {currentValue > 0 ? (
+        <div className="h-[200px] w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
             <defs>
               <linearGradient id="portfolioGradient" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor="#a855f7" stopOpacity={0.4} />
@@ -91,6 +82,11 @@ export function PortfolioChart() {
           </AreaChart>
         </ResponsiveContainer>
       </div>
+      ) : (
+        <div className="h-[200px] flex items-center justify-center">
+          <p className="text-white/40">No portfolio value yet. Make a deposit to get started.</p>
+        </div>
+      )}
     </div>
   )
 }

@@ -80,3 +80,31 @@ export function formatNextBatchTime(): string {
   })
 }
 
+// VaultType to RiskLevel Mapping Utilities
+
+/**
+ * Convert VaultType enum to RiskLevel number for smart contract calls
+ * Conservative = 0, Balanced = 1, Aggressive = 2
+ */
+export function vaultTypeToRiskLevel(vaultType: string): number {
+  const mapping: Record<string, number> = {
+    conservative: 0,
+    balanced: 1,
+    aggressive: 2,
+  }
+  return mapping[vaultType] ?? 0
+}
+
+/**
+ * Convert RiskLevel number to VaultType enum string
+ * 0 = Conservative, 1 = Balanced, 2 = Aggressive
+ */
+export function riskLevelToVaultType(riskLevel: number): string {
+  const mapping: Record<number, string> = {
+    0: 'conservative',
+    1: 'balanced',
+    2: 'aggressive',
+  }
+  return mapping[riskLevel] ?? 'conservative'
+}
+

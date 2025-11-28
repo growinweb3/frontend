@@ -10,6 +10,7 @@ export interface VaultConfig {
   name: string
   description: string
   riskLevel: "Low" | "Medium" | "High"
+  contractAddress: string // Vault contract address on Lisk Sepolia
   targetAPY: {
     min: number
     max: number

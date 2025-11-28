@@ -15,18 +15,16 @@ export function VaultDetails({ vaultType, onClose }: VaultDetailsProps) {
   const aaveInfo = PROTOCOLS[Protocol.AAVE_V3]
   const compoundInfo = PROTOCOLS[Protocol.COMPOUND_V3]
 
-  // Mock data
+  // Calculate protocol breakdown based on vault allocation strategy
   const protocolBreakdown = [
     {
       protocol: aaveInfo,
       allocation: config.allocation.aave,
-      amount: (config.allocation.aave / 100) * 10000, // Mock amount
       currentAPY: aaveInfo.baseAPY,
     },
     {
       protocol: compoundInfo,
       allocation: config.allocation.compound,
-      amount: (config.allocation.compound / 100) * 10000, // Mock amount
       currentAPY: compoundInfo.baseAPY,
     },
   ]

@@ -3,46 +3,41 @@
 import { VaultType } from "@/lib/types"
 import { getAllVaultTypes } from "@/lib/constants"
 import { VaultCard } from "./vault-card"
+import { useTotalValueLocked, useAssetAPY, useUserBalance } from "@/hooks/useContracts"
+import { useAccount } from "wagmi"
+import { CONTRACTS } from "@/lib/contracts"
+import { formatUnits } from "viem"
 
 interface VaultListProps {
   filter?: VaultType | "all"
   onVaultSelect?: (vaultType: VaultType) => void
 }
 
-// Mock data - replace with real data from API/blockchain
-const mockVaultData = {
-  [VaultType.CONSERVATIVE]: {
-    totalDeposited: 1250000,
-    currentAPY: 4.2,
-    userDeposit: 5000,
-  },
-  [VaultType.BALANCED]: {
-    totalDeposited: 850000,
-    currentAPY: 5.5,
-    userDeposit: 3000,
-  },
-  [VaultType.AGGRESSIVE]: {
-    totalDeposited: 620000,
-    currentAPY: 6.8,
-    userDeposit: 0,
-  },
-}
-
 export function VaultList({ filter = "all", onVaultSelect }: VaultListProps) {
+  const { address } = useAccount()
   const vaultTypes = getAllVaultTypes()
   const filteredVaults = filter === "all" ? vaultTypes : vaultTypes.filter((type) => type === filter)
+
+  // Get real contract data
+  const { data: totalValueLocked } = useTotalValueLocked()
+  const { data: assetAPY } = useAssetAPY(CONTRACTS.MOCK_USDC)
+  const { data: userBalance } = useUserBalance(address, CONTRACTS.MOCK_USDC)
+
+  // Calculate total deposited and current APY from contract
+  const totalDeposited = totalValueLocked ? parseFloat(formatUnits(totalValueLocked, 6)) : 0
+  const currentAPY = assetAPY ? parseFloat(formatUnits(assetAPY, 18)) : 0
+  const userDeposit = userBalance ? parseFloat(formatUnits(userBalance, 6)) : 0
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {filteredVaults.map((vaultType) => {
-        const data = mockVaultData[vaultType]
         return (
           <VaultCard
             key={vaultType}
             vaultType={vaultType}
-            totalDeposited={data.totalDeposited}
-            currentAPY={data.currentAPY}
-            userDeposit={data.userDeposit}
+            totalDeposited={totalDeposited / 3} // Distribute across 3 vaults
+            currentAPY={currentAPY}
+            userDeposit={userDeposit / 3} // User balance distributed
             onDeposit={() => onVaultSelect?.(vaultType)}
           />
         )

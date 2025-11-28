@@ -35,12 +35,14 @@ export function CTASection() {
   }, [])
 
   const handleGetStarted = () => {
+    // Redirect to app subdomain
     if (typeof window !== 'undefined') {
       const hostname = window.location.hostname
       const protocol = window.location.protocol
+      const port = window.location.port ? `:${window.location.port}` : ''
       
       if (hostname.includes('localhost') || hostname.includes('127.0.0.1')) {
-        window.location.href = '/dashboard'
+        window.location.href = `${protocol}//app.localhost${port}/dashboard`
       } else {
         const rootDomain = hostname.split('.').slice(-2).join('.')
         window.location.href = `${protocol}//app.${rootDomain}/dashboard`

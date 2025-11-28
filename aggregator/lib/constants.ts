@@ -8,7 +8,7 @@ export const LISK_MAINNET_CHAIN_ID = 1135
 export const USDC_TOKEN: TokenInfo = {
   symbol: "USDC",
   name: "USD Coin",
-  address: "0x0000000000000000000000000000000000000000", // Replace with actual Lisk USDC address
+  address: "0x6f576F9A89555b028ce97581DA6d10e35d433F04",
   decimals: 6,
   logo: "/tokens/usdc.svg",
 }
@@ -21,7 +21,7 @@ export const PROTOCOLS: Record<Protocol, ProtocolInfo> = {
     displayName: "Aave V3",
     version: "3.0",
     description: "Leading decentralized lending protocol with battle-tested security and high liquidity.",
-    contractAddress: "0x0000000000000000000000000000000000000000", // Replace with Lisk Aave V3 Pool address
+    contractAddress: "0x53175d08E96a961233ea333385EA74E74C556Cf1",
     auditStatus: "Audited",
     auditor: "OpenZeppelin, Trail of Bits, ABDK",
     auditDate: "2024-Q2",
@@ -35,7 +35,7 @@ export const PROTOCOLS: Record<Protocol, ProtocolInfo> = {
     displayName: "Compound V3",
     version: "3.0",
     description: "Efficient money market protocol optimized for USDC with streamlined risk management.",
-    contractAddress: "0x0000000000000000000000000000000000000000", // Replace with Lisk Compound V3 Comet address
+    contractAddress: "0x831f464C241eAa6CcF72F5570c7F5E5f9759317e",
     auditStatus: "Audited",
     auditor: "OpenZeppelin, ChainSecurity",
     auditDate: "2024-Q1",
@@ -52,6 +52,7 @@ export const VAULT_CONFIGS: Record<VaultType, VaultConfig> = {
     name: "Conservative Vault",
     description: "Low-risk strategy prioritizing capital preservation with steady yields from established protocols.",
     riskLevel: "Low",
+    contractAddress: "0x6E69Ed7A9b7F4b1De965328738b3d7Bb757Ea94c",
     targetAPY: {
       min: 3.5,
       max: 5.0,
@@ -68,6 +69,7 @@ export const VAULT_CONFIGS: Record<VaultType, VaultConfig> = {
     name: "Balanced Vault",
     description: "Balanced risk-reward approach with diversified exposure across both protocols.",
     riskLevel: "Medium",
+    contractAddress: "0x21AF332B10481972B903cBd6C3f1ec51546552e7",
     targetAPY: {
       min: 4.5,
       max: 6.5,
@@ -84,6 +86,7 @@ export const VAULT_CONFIGS: Record<VaultType, VaultConfig> = {
     name: "Aggressive Vault",
     description: "Higher risk strategy maximizing yields by favoring protocols with the highest APY potential.",
     riskLevel: "High",
+    contractAddress: "0xc4E50772bd6d27661EE12d81e62Daa4882F4E6f4",
     targetAPY: {
       min: 5.5,
       max: 8.0,

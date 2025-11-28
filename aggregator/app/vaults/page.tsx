@@ -8,6 +8,8 @@ import { FloatingNav } from "@/components/floating-nav"
 import { Card } from "@/components/ui/card"
 import { VaultType } from "@/lib/types"
 import { Shield, TrendingUp, Zap } from "lucide-react"
+import { VaultInteractionList } from "@/components/VaultInteraction"
+import { DashboardStats } from "@/components/DashboardStats"
 
 export default function Vaults() {
   const [selectedVault, setSelectedVault] = useState<VaultType | null>(null)
@@ -17,6 +19,15 @@ export default function Vaults() {
     <>
       <PageLayout>
         <div className="space-y-6">
+          {/* Web3 Stats Overview */}
+          <DashboardStats />
+
+          {/* Live Vault Interactions */}
+          <div>
+            <h2 className="text-2xl font-bold text-white mb-6">Live Vault Operations</h2>
+            <VaultInteractionList />
+          </div>
+
           {/* Page Title */}
           <div>
             <h1 className="text-3xl font-bold tracking-tight mb-2">USDC Yield Vaults</h1>
