@@ -18,9 +18,7 @@ export function middleware(request: NextRequest) {
   // Determine if this is the app subdomain
   // In development: only if hostname starts with "app."
   // In production: if subdomain is "app"
-  const isAppSubdomain = isDevelopment 
-    ? hostname.startsWith('app.') 
-    : subdomain === 'app'
+  const isAppSubdomain = hostname.startsWith('app.')
   
   // Route logic:
   // 1. If accessing app routes on root domain -> redirect to app subdomain
