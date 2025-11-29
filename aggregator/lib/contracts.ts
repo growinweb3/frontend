@@ -1,20 +1,19 @@
-import { Address, getAddress } from 'viem'
+import { Address } from 'viem'
 
 // Contract addresses for Lisk Sepolia network
 export const CONTRACTS = {
-  ROUTER: getAddress('0x7dC0da00F845A4272C08E51a57651ac004f5e0C7'),
-  MOCK_USDC: getAddress('0x6f576F9A89555b028ce97581DA6d10e35d433F04'),
-  MOCK_USDT: getAddress('0xA8BD95EfA4D1d34B5AD2e73CCCDd7C4F956B5e5F'),
+  ROUTER: '0x7dC0da00F845A4272C08E51a57651ac004f5e0C7',
+  MOCK_USDC: '0x6f576F9A89555b028ce97581DA6d10e35d433F04',
   // Vault contracts for different risk levels
-  VAULT_CONSERVATIVE: getAddress('0x6E69Ed7A9b7F4b1De965328738b3d7Bb757Ea94c'),
-  VAULT_BALANCED: getAddress('0x21AF332B10481972B903cBd6C3f1ec51546552e7'),
-  VAULT_AGGRESSIVE: getAddress('0xc4E50772bd6d27661EE12d81e62Daa4882F4E6f4'),
+  VAULT_CONSERVATIVE: '0x6E69Ed7A9b7F4b1De965328738b3d7Bb757Ea94c',
+  VAULT_BALANCED: '0x21AF332B10481972B903cBd6C3f1ec51546552e7',
+  VAULT_AGGRESSIVE: '0xc4E50772bd6d27661EE12d81e62Daa4882F4E6f4',
   // Strategy contracts (abstracted by vaults, rarely need direct interaction)
-  STRATEGY_AAVE: getAddress('0x85A1B6A61C5E73418A40A3a79F6E811Ee848dAa7'),
-  STRATEGY_COMPOUND: getAddress('0x4B29149492019fE65D0363097728Cab61Cb97F0f'),
+  STRATEGY_AAVE: '0x85A1B6A61C5E73418A40A3a79F6E811Ee848dAa7',
+  STRATEGY_COMPOUND: '0x4B29149492019fE65D0363097728Cab61Cb97F0f',
   // Protocol mock contracts
-  MOCK_PROTOCOL_AAVE: getAddress('0x53175d08E96a961233ea333385EA74E74C556Cf1'),
-  MOCK_PROTOCOL_COMPOUND: getAddress('0x831f464C241eAa6CcF72F5570c7F5E5f9759317e'),
+  MOCK_PROTOCOL_AAVE: '0x53175d08E96a961233ea333385EA74E74C556Cf1',
+  MOCK_PROTOCOL_COMPOUND: '0x831f464C241eAa6CcF72F5570c7F5E5f9759317e',
 } as const
 
 // Chain configuration for Lisk Sepolia
@@ -43,333 +42,6 @@ export const LISK_SEPOLIA = {
   testnet: true,
 } as const
 
-// Router contract ABI - Batch deposit/withdraw system with RiskLevel enum
-// RiskLevel: 0 = Conservative, 1 = Balanced, 2 = Aggressive
-export const ROUTER_ABI = [
-  // Read functions - Batch and queue queries
-  {
-    inputs: [
-      { name: 'user', type: 'address' },
-      { name: 'riskLevel', type: 'uint8' },
-    ],
-    name: 'getPendingDeposit',
-    outputs: [{ name: 'amount', type: 'uint256' }],
-    stateMutability: 'view',
-    type: 'function',
-  },
-  {
-    inputs: [
-      { name: 'user', type: 'address' },
-      { name: 'riskLevel', type: 'uint8' },
-    ],
-    name: 'getPendingWithdraw',
-    outputs: [{ name: 'shares', type: 'uint256' }],
-    stateMutability: 'view',
-    type: 'function',
-  },
-  {
-    inputs: [{ name: 'riskLevel', type: 'uint8' }],
-    name: 'getNextBatchTime',
-    outputs: [{ name: 'nextBatchTime', type: 'uint256' }],
-    stateMutability: 'view',
-    type: 'function',
-  },
-  {
-    inputs: [{ name: 'riskLevel', type: 'uint8' }],
-    name: 'isBatchReady',
-    outputs: [{ name: 'ready', type: 'bool' }],
-    stateMutability: 'view',
-    type: 'function',
-  },
-  {
-    inputs: [
-      { name: '', type: 'address' },
-      { name: '', type: 'uint8' },
-    ],
-    name: 'claimableShares',
-    outputs: [{ name: '', type: 'uint256' }],
-    stateMutability: 'view',
-    type: 'function',
-  },
-  {
-    inputs: [
-      { name: '', type: 'address' },
-      { name: '', type: 'uint8' },
-    ],
-    name: 'claimableUSDC',
-    outputs: [{ name: '', type: 'uint256' }],
-    stateMutability: 'view',
-    type: 'function',
-  },
-  {
-    inputs: [],
-    name: 'batchInterval',
-    outputs: [{ name: '', type: 'uint256' }],
-    stateMutability: 'view',
-    type: 'function',
-  },
-  {
-    inputs: [],
-    name: 'minDepositAmount',
-    outputs: [{ name: '', type: 'uint256' }],
-    stateMutability: 'view',
-    type: 'function',
-  },
-  {
-    inputs: [{ name: 'riskLevel', type: 'uint8' }],
-    name: 'totalPendingDeposits',
-    outputs: [{ name: '', type: 'uint256' }],
-    stateMutability: 'view',
-    type: 'function',
-  },
-  {
-    inputs: [{ name: 'riskLevel', type: 'uint8' }],
-    name: 'totalPendingWithdraws',
-    outputs: [{ name: '', type: 'uint256' }],
-    stateMutability: 'view',
-    type: 'function',
-  },
-  {
-    inputs: [{ name: '', type: 'uint8' }],
-    name: 'vaults',
-    outputs: [{ name: '', type: 'address' }],
-    stateMutability: 'view',
-    type: 'function',
-  },
-  {
-    inputs: [],
-    name: 'usdc',
-    outputs: [{ name: '', type: 'address' }],
-    stateMutability: 'view',
-    type: 'function',
-  },
-  
-  // Write functions - Queue deposit/withdraw
-  {
-    inputs: [
-      { name: 'amount', type: 'uint256' },
-      { name: 'riskLevel', type: 'uint8' },
-    ],
-    name: 'deposit',
-    outputs: [],
-    stateMutability: 'nonpayable',
-    type: 'function',
-  },
-  {
-    inputs: [
-      { name: 'shares', type: 'uint256' },
-      { name: 'riskLevel', type: 'uint8' },
-    ],
-    name: 'withdraw',
-    outputs: [],
-    stateMutability: 'nonpayable',
-    type: 'function',
-  },
-  
-  // Claim functions - Get shares/USDC after batch execution
-  {
-    inputs: [{ name: 'riskLevel', type: 'uint8' }],
-    name: 'claimDepositShares',
-    outputs: [],
-    stateMutability: 'nonpayable',
-    type: 'function',
-  },
-  {
-    inputs: [{ name: 'riskLevel', type: 'uint8' }],
-    name: 'claimWithdrawAssets',
-    outputs: [],
-    stateMutability: 'nonpayable',
-    type: 'function',
-  },
-  
-  // Cancel functions
-  {
-    inputs: [
-      { name: 'user', type: 'address' },
-      { name: 'riskLevel', type: 'uint8' },
-    ],
-    name: 'cancelPendingDeposit',
-    outputs: [],
-    stateMutability: 'nonpayable',
-    type: 'function',
-  },
-  {
-    inputs: [
-      { name: 'user', type: 'address' },
-      { name: 'riskLevel', type: 'uint8' },
-    ],
-    name: 'cancelPendingWithdraw',
-    outputs: [],
-    stateMutability: 'nonpayable',
-    type: 'function',
-  },
-  
-  // Batch execution (typically called by backend/keeper)
-  {
-    inputs: [{ name: 'riskLevel', type: 'uint8' }],
-    name: 'executeBatchDeposits',
-    outputs: [],
-    stateMutability: 'nonpayable',
-    type: 'function',
-  },
-  {
-    inputs: [{ name: 'riskLevel', type: 'uint8' }],
-    name: 'executeBatchWithdraws',
-    outputs: [],
-    stateMutability: 'nonpayable',
-    type: 'function',
-  },
-
-  // Events
-  {
-    anonymous: false,
-    inputs: [
-      { indexed: true, name: 'user', type: 'address' },
-      { indexed: true, name: 'riskLevel', type: 'uint8' },
-      { indexed: false, name: 'amount', type: 'uint256' },
-      { indexed: false, name: 'nextBatchTime', type: 'uint256' },
-    ],
-    name: 'DepositQueued',
-    type: 'event',
-  },
-  {
-    anonymous: false,
-    inputs: [
-      { indexed: true, name: 'user', type: 'address' },
-      { indexed: true, name: 'riskLevel', type: 'uint8' },
-      { indexed: false, name: 'shares', type: 'uint256' },
-      { indexed: false, name: 'nextBatchTime', type: 'uint256' },
-    ],
-    name: 'WithdrawQueued',
-    type: 'event',
-  },
-  {
-    anonymous: false,
-    inputs: [
-      { indexed: true, name: 'user', type: 'address' },
-      { indexed: true, name: 'riskLevel', type: 'uint8' },
-      { indexed: false, name: 'shares', type: 'uint256' },
-    ],
-    name: 'DepositClaimed',
-    type: 'event',
-  },
-  {
-    anonymous: false,
-    inputs: [
-      { indexed: true, name: 'user', type: 'address' },
-      { indexed: true, name: 'riskLevel', type: 'uint8' },
-      { indexed: false, name: 'assets', type: 'uint256' },
-    ],
-    name: 'WithdrawClaimed',
-    type: 'event',
-  },
-  {
-    anonymous: false,
-    inputs: [
-      { indexed: true, name: 'riskLevel', type: 'uint8' },
-      { indexed: false, name: 'totalAmount', type: 'uint256' },
-      { indexed: false, name: 'userCount', type: 'uint256' },
-      { indexed: false, name: 'timestamp', type: 'uint256' },
-    ],
-    name: 'BatchDepositsExecuted',
-    type: 'event',
-  },
-  {
-    anonymous: false,
-    inputs: [
-      { indexed: true, name: 'riskLevel', type: 'uint8' },
-      { indexed: false, name: 'totalShares', type: 'uint256' },
-      { indexed: false, name: 'totalAssets', type: 'uint256' },
-      { indexed: false, name: 'userCount', type: 'uint256' },
-      { indexed: false, name: 'timestamp', type: 'uint256' },
-    ],
-    name: 'BatchWithdrawsExecuted',
-    type: 'event',
-  },
-] as const
-
-// MockUSDC contract ABI - Standard ERC20 with mint function for testing
-export const MOCK_USDC_ABI = [
-  // Standard ERC20 functions
-  {
-    inputs: [{ name: 'account', type: 'address' }],
-    name: 'balanceOf',
-    outputs: [{ name: '', type: 'uint256' }],
-    stateMutability: 'view',
-    type: 'function',
-  },
-  {
-    inputs: [],
-    name: 'totalSupply',
-    outputs: [{ name: '', type: 'uint256' }],
-    stateMutability: 'view',
-    type: 'function',
-  },
-  {
-    inputs: [
-      { name: 'spender', type: 'address' },
-      { name: 'amount', type: 'uint256' },
-    ],
-    name: 'approve',
-    outputs: [{ name: '', type: 'bool' }],
-    stateMutability: 'nonpayable',
-    type: 'function',
-  },
-  {
-    inputs: [
-      { name: 'owner', type: 'address' },
-      { name: 'spender', type: 'address' },
-    ],
-    name: 'allowance',
-    outputs: [{ name: '', type: 'uint256' }],
-    stateMutability: 'view',
-    type: 'function',
-  },
-  {
-    inputs: [
-      { name: 'to', type: 'address' },
-      { name: 'amount', type: 'uint256' },
-    ],
-    name: 'transfer',
-    outputs: [{ name: '', type: 'bool' }],
-    stateMutability: 'nonpayable',
-    type: 'function',
-  },
-  
-  // Mock functions for testing
-  {
-    inputs: [
-      { name: 'to', type: 'address' },
-      { name: 'amount', type: 'uint256' },
-    ],
-    name: 'mint',
-    outputs: [],
-    stateMutability: 'nonpayable',
-    type: 'function',
-  },
-  {
-    inputs: [],
-    name: 'decimals',
-    outputs: [{ name: '', type: 'uint8' }],
-    stateMutability: 'view',
-    type: 'function',
-  },
-  {
-    inputs: [],
-    name: 'symbol',
-    outputs: [{ name: '', type: 'string' }],
-    stateMutability: 'view',
-    type: 'function',
-  },
-  {
-    inputs: [],
-    name: 'name',
-    outputs: [{ name: '', type: 'string' }],
-    stateMutability: 'view',
-    type: 'function',
-  },
-] as const
-
 // Supported assets configuration
 export const SUPPORTED_ASSETS = [
   {
@@ -378,14 +50,12 @@ export const SUPPORTED_ASSETS = [
     name: 'USD Coin',
     decimals: 6,
     icon: '/tokens/usdc.svg',
-  },
-  {
-    address: CONTRACTS.MOCK_USDT,
-    symbol: 'USDT',
-    name: 'Tether USD',
-    decimals: 6,
-    icon: '/tokens/usdt.svg',
-  },
+  }
 ] as const
 
 export type SupportedAsset = typeof SUPPORTED_ASSETS[number]
+
+export const ROUTER_ABI = [{ "inputs": [{ "internalType": "address", "name": "_usdc", "type": "address" }], "stateMutability": "nonpayable", "type": "constructor" }, { "inputs": [], "name": "EnforcedPause", "type": "error" }, { "inputs": [], "name": "ExpectedPause", "type": "error" }, { "inputs": [{ "internalType": "address", "name": "owner", "type": "address" }], "name": "OwnableInvalidOwner", "type": "error" }, { "inputs": [{ "internalType": "address", "name": "account", "type": "address" }], "name": "OwnableUnauthorizedAccount", "type": "error" }, { "inputs": [], "name": "ReentrancyGuardReentrantCall", "type": "error" }, { "inputs": [{ "internalType": "address", "name": "token", "type": "address" }], "name": "SafeERC20FailedOperation", "type": "error" }, { "anonymous": false, "inputs": [{ "indexed": true, "internalType": "enum Router.RiskLevel", "name": "riskLevel", "type": "uint8" }, { "indexed": false, "internalType": "uint256", "name": "totalAmount", "type": "uint256" }, { "indexed": false, "internalType": "uint256", "name": "userCount", "type": "uint256" }, { "indexed": false, "internalType": "uint256", "name": "timestamp", "type": "uint256" }], "name": "BatchDepositsExecuted", "type": "event" }, { "anonymous": false, "inputs": [{ "indexed": false, "internalType": "uint256", "name": "newInterval", "type": "uint256" }], "name": "BatchIntervalUpdated", "type": "event" }, { "anonymous": false, "inputs": [{ "indexed": true, "internalType": "enum Router.RiskLevel", "name": "riskLevel", "type": "uint8" }, { "indexed": false, "internalType": "uint256", "name": "totalShares", "type": "uint256" }, { "indexed": false, "internalType": "uint256", "name": "totalAssets", "type": "uint256" }, { "indexed": false, "internalType": "uint256", "name": "userCount", "type": "uint256" }, { "indexed": false, "internalType": "uint256", "name": "timestamp", "type": "uint256" }], "name": "BatchWithdrawsExecuted", "type": "event" }, { "anonymous": false, "inputs": [{ "indexed": true, "internalType": "address", "name": "user", "type": "address" }, { "indexed": true, "internalType": "enum Router.RiskLevel", "name": "riskLevel", "type": "uint8" }, { "indexed": false, "internalType": "uint256", "name": "shares", "type": "uint256" }], "name": "DepositClaimed", "type": "event" }, { "anonymous": false, "inputs": [{ "indexed": true, "internalType": "address", "name": "user", "type": "address" }, { "indexed": true, "internalType": "enum Router.RiskLevel", "name": "riskLevel", "type": "uint8" }, { "indexed": false, "internalType": "uint256", "name": "amount", "type": "uint256" }, { "indexed": false, "internalType": "uint256", "name": "nextBatchTime", "type": "uint256" }], "name": "DepositQueued", "type": "event" }, { "anonymous": false, "inputs": [{ "indexed": false, "internalType": "uint256", "name": "newAmount", "type": "uint256" }], "name": "MinDepositAmountUpdated", "type": "event" }, { "anonymous": false, "inputs": [{ "indexed": true, "internalType": "address", "name": "previousOwner", "type": "address" }, { "indexed": true, "internalType": "address", "name": "newOwner", "type": "address" }], "name": "OwnershipTransferred", "type": "event" }, { "anonymous": false, "inputs": [{ "indexed": false, "internalType": "address", "name": "account", "type": "address" }], "name": "Paused", "type": "event" }, { "anonymous": false, "inputs": [{ "indexed": false, "internalType": "address", "name": "account", "type": "address" }], "name": "Unpaused", "type": "event" }, { "anonymous": false, "inputs": [{ "indexed": true, "internalType": "enum Router.RiskLevel", "name": "riskLevel", "type": "uint8" }, { "indexed": false, "internalType": "address", "name": "vaultAddress", "type": "address" }], "name": "VaultSet", "type": "event" }, { "anonymous": false, "inputs": [{ "indexed": true, "internalType": "address", "name": "user", "type": "address" }, { "indexed": true, "internalType": "enum Router.RiskLevel", "name": "riskLevel", "type": "uint8" }, { "indexed": false, "internalType": "uint256", "name": "assets", "type": "uint256" }], "name": "WithdrawClaimed", "type": "event" }, { "anonymous": false, "inputs": [{ "indexed": true, "internalType": "address", "name": "user", "type": "address" }, { "indexed": true, "internalType": "enum Router.RiskLevel", "name": "riskLevel", "type": "uint8" }, { "indexed": false, "internalType": "uint256", "name": "shares", "type": "uint256" }, { "indexed": false, "internalType": "uint256", "name": "nextBatchTime", "type": "uint256" }], "name": "WithdrawQueued", "type": "event" }, { "inputs": [], "name": "batchInterval", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "view", "type": "function" }, { "inputs": [{ "internalType": "address", "name": "user", "type": "address" }, { "internalType": "enum Router.RiskLevel", "name": "riskLevel", "type": "uint8" }], "name": "cancelPendingDeposit", "outputs": [], "stateMutability": "nonpayable", "type": "function" }, { "inputs": [{ "internalType": "address", "name": "user", "type": "address" }, { "internalType": "enum Router.RiskLevel", "name": "riskLevel", "type": "uint8" }], "name": "cancelPendingWithdraw", "outputs": [], "stateMutability": "nonpayable", "type": "function" }, { "inputs": [{ "internalType": "enum Router.RiskLevel", "name": "riskLevel", "type": "uint8" }], "name": "claimDepositShares", "outputs": [], "stateMutability": "nonpayable", "type": "function" }, { "inputs": [{ "internalType": "enum Router.RiskLevel", "name": "riskLevel", "type": "uint8" }], "name": "claimWithdrawAssets", "outputs": [], "stateMutability": "nonpayable", "type": "function" }, { "inputs": [{ "internalType": "address", "name": "", "type": "address" }, { "internalType": "enum Router.RiskLevel", "name": "", "type": "uint8" }], "name": "claimableShares", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "view", "type": "function" }, { "inputs": [{ "internalType": "address", "name": "", "type": "address" }, { "internalType": "enum Router.RiskLevel", "name": "", "type": "uint8" }], "name": "claimableUSDC", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "view", "type": "function" }, { "inputs": [{ "internalType": "uint256", "name": "amount", "type": "uint256" }, { "internalType": "enum Router.RiskLevel", "name": "riskLevel", "type": "uint8" }], "name": "deposit", "outputs": [], "stateMutability": "nonpayable", "type": "function" }, { "inputs": [{ "internalType": "enum Router.RiskLevel", "name": "", "type": "uint8" }], "name": "depositBatchPointer", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "view", "type": "function" }, { "inputs": [{ "internalType": "enum Router.RiskLevel", "name": "", "type": "uint8" }, { "internalType": "uint256", "name": "", "type": "uint256" }], "name": "depositUsers", "outputs": [{ "internalType": "address", "name": "", "type": "address" }], "stateMutability": "view", "type": "function" }, { "inputs": [{ "internalType": "address", "name": "token", "type": "address" }, { "internalType": "uint256", "name": "amount", "type": "uint256" }], "name": "emergencyWithdraw", "outputs": [], "stateMutability": "nonpayable", "type": "function" }, { "inputs": [{ "internalType": "enum Router.RiskLevel", "name": "riskLevel", "type": "uint8" }], "name": "executeBatch", "outputs": [], "stateMutability": "nonpayable", "type": "function" }, { "inputs": [], "name": "executeBatchAll", "outputs": [], "stateMutability": "nonpayable", "type": "function" }, { "inputs": [{ "internalType": "enum Router.RiskLevel", "name": "riskLevel", "type": "uint8" }], "name": "executeBatchDeposits", "outputs": [], "stateMutability": "nonpayable", "type": "function" }, { "inputs": [{ "internalType": "enum Router.RiskLevel", "name": "riskLevel", "type": "uint8" }], "name": "executeBatchWithdraws", "outputs": [], "stateMutability": "nonpayable", "type": "function" }, { "inputs": [{ "internalType": "enum Router.RiskLevel", "name": "riskLevel", "type": "uint8" }], "name": "forceExecuteBatch", "outputs": [], "stateMutability": "nonpayable", "type": "function" }, { "inputs": [{ "internalType": "enum Router.RiskLevel", "name": "riskLevel", "type": "uint8" }], "name": "getDepositUserCount", "outputs": [{ "internalType": "uint256", "name": "count", "type": "uint256" }], "stateMutability": "view", "type": "function" }, { "inputs": [{ "internalType": "enum Router.RiskLevel", "name": "riskLevel", "type": "uint8" }], "name": "getNextBatchTime", "outputs": [{ "internalType": "uint256", "name": "nextBatchTime", "type": "uint256" }], "stateMutability": "view", "type": "function" }, { "inputs": [{ "internalType": "address", "name": "user", "type": "address" }, { "internalType": "enum Router.RiskLevel", "name": "riskLevel", "type": "uint8" }], "name": "getPendingDeposit", "outputs": [{ "internalType": "uint256", "name": "amount", "type": "uint256" }], "stateMutability": "view", "type": "function" }, { "inputs": [{ "internalType": "address", "name": "user", "type": "address" }, { "internalType": "enum Router.RiskLevel", "name": "riskLevel", "type": "uint8" }], "name": "getPendingWithdraw", "outputs": [{ "internalType": "uint256", "name": "shares", "type": "uint256" }], "stateMutability": "view", "type": "function" }, { "inputs": [{ "internalType": "enum Router.RiskLevel", "name": "riskLevel", "type": "uint8" }], "name": "getWithdrawUserCount", "outputs": [{ "internalType": "uint256", "name": "count", "type": "uint256" }], "stateMutability": "view", "type": "function" }, { "inputs": [{ "internalType": "enum Router.RiskLevel", "name": "riskLevel", "type": "uint8" }], "name": "isBatchReady", "outputs": [{ "internalType": "bool", "name": "ready", "type": "bool" }], "stateMutability": "view", "type": "function" }, { "inputs": [{ "internalType": "address", "name": "", "type": "address" }, { "internalType": "enum Router.RiskLevel", "name": "", "type": "uint8" }], "name": "isInDepositList", "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }], "stateMutability": "view", "type": "function" }, { "inputs": [{ "internalType": "address", "name": "", "type": "address" }, { "internalType": "enum Router.RiskLevel", "name": "", "type": "uint8" }], "name": "isInWithdrawList", "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }], "stateMutability": "view", "type": "function" }, { "inputs": [{ "internalType": "enum Router.RiskLevel", "name": "", "type": "uint8" }], "name": "lastBatchTime", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "view", "type": "function" }, { "inputs": [], "name": "minDepositAmount", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "view", "type": "function" }, { "inputs": [], "name": "owner", "outputs": [{ "internalType": "address", "name": "", "type": "address" }], "stateMutability": "view", "type": "function" }, { "inputs": [], "name": "pause", "outputs": [], "stateMutability": "nonpayable", "type": "function" }, { "inputs": [], "name": "paused", "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }], "stateMutability": "view", "type": "function" }, { "inputs": [{ "internalType": "address", "name": "", "type": "address" }, { "internalType": "enum Router.RiskLevel", "name": "", "type": "uint8" }], "name": "pendingDeposits", "outputs": [{ "internalType": "uint256", "name": "amount", "type": "uint256" }, { "internalType": "uint256", "name": "timestamp", "type": "uint256" }], "stateMutability": "view", "type": "function" }, { "inputs": [{ "internalType": "address", "name": "", "type": "address" }, { "internalType": "enum Router.RiskLevel", "name": "", "type": "uint8" }], "name": "pendingWithdraws", "outputs": [{ "internalType": "uint256", "name": "shares", "type": "uint256" }, { "internalType": "uint256", "name": "timestamp", "type": "uint256" }], "stateMutability": "view", "type": "function" }, { "inputs": [], "name": "renounceOwnership", "outputs": [], "stateMutability": "nonpayable", "type": "function" }, { "inputs": [{ "internalType": "uint256", "name": "newInterval", "type": "uint256" }], "name": "setBatchInterval", "outputs": [], "stateMutability": "nonpayable", "type": "function" }, { "inputs": [{ "internalType": "uint256", "name": "newAmount", "type": "uint256" }], "name": "setMinDepositAmount", "outputs": [], "stateMutability": "nonpayable", "type": "function" }, { "inputs": [{ "internalType": "enum Router.RiskLevel", "name": "riskLevel", "type": "uint8" }, { "internalType": "address", "name": "vaultAddress", "type": "address" }], "name": "setVault", "outputs": [], "stateMutability": "nonpayable", "type": "function" }, { "inputs": [{ "internalType": "enum Router.RiskLevel", "name": "", "type": "uint8" }], "name": "totalPendingDeposits", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "view", "type": "function" }, { "inputs": [{ "internalType": "enum Router.RiskLevel", "name": "", "type": "uint8" }], "name": "totalPendingWithdraws", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "view", "type": "function" }, { "inputs": [{ "internalType": "address", "name": "newOwner", "type": "address" }], "name": "transferOwnership", "outputs": [], "stateMutability": "nonpayable", "type": "function" }, { "inputs": [], "name": "unpause", "outputs": [], "stateMutability": "nonpayable", "type": "function" }, { "inputs": [], "name": "usdc", "outputs": [{ "internalType": "contract IERC20", "name": "", "type": "address" }], "stateMutability": "view", "type": "function" }, { "inputs": [{ "internalType": "enum Router.RiskLevel", "name": "", "type": "uint8" }], "name": "vaults", "outputs": [{ "internalType": "contract IVault", "name": "", "type": "address" }], "stateMutability": "view", "type": "function" }, { "inputs": [{ "internalType": "uint256", "name": "shares", "type": "uint256" }, { "internalType": "enum Router.RiskLevel", "name": "riskLevel", "type": "uint8" }], "name": "withdraw", "outputs": [], "stateMutability": "nonpayable", "type": "function" }, { "inputs": [{ "internalType": "enum Router.RiskLevel", "name": "", "type": "uint8" }], "name": "withdrawBatchPointer", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "view", "type": "function" }, { "inputs": [{ "internalType": "enum Router.RiskLevel", "name": "", "type": "uint8" }, { "internalType": "uint256", "name": "", "type": "uint256" }], "name": "withdrawUsers", "outputs": [{ "internalType": "address", "name": "", "type": "address" }], "stateMutability": "view", "type": "function" }] as const;
+export const USDC_ABI = [{ "inputs": [], "stateMutability": "nonpayable", "type": "constructor" }, { "inputs": [{ "internalType": "address", "name": "spender", "type": "address" }, { "internalType": "uint256", "name": "allowance", "type": "uint256" }, { "internalType": "uint256", "name": "needed", "type": "uint256" }], "name": "ERC20InsufficientAllowance", "type": "error" }, { "inputs": [{ "internalType": "address", "name": "sender", "type": "address" }, { "internalType": "uint256", "name": "balance", "type": "uint256" }, { "internalType": "uint256", "name": "needed", "type": "uint256" }], "name": "ERC20InsufficientBalance", "type": "error" }, { "inputs": [{ "internalType": "address", "name": "approver", "type": "address" }], "name": "ERC20InvalidApprover", "type": "error" }, { "inputs": [{ "internalType": "address", "name": "receiver", "type": "address" }], "name": "ERC20InvalidReceiver", "type": "error" }, { "inputs": [{ "internalType": "address", "name": "sender", "type": "address" }], "name": "ERC20InvalidSender", "type": "error" }, { "inputs": [{ "internalType": "address", "name": "spender", "type": "address" }], "name": "ERC20InvalidSpender", "type": "error" }, { "inputs": [{ "internalType": "address", "name": "owner", "type": "address" }], "name": "OwnableInvalidOwner", "type": "error" }, { "inputs": [{ "internalType": "address", "name": "account", "type": "address" }], "name": "OwnableUnauthorizedAccount", "type": "error" }, { "anonymous": false, "inputs": [{ "indexed": true, "internalType": "address", "name": "owner", "type": "address" }, { "indexed": true, "internalType": "address", "name": "spender", "type": "address" }, { "indexed": false, "internalType": "uint256", "name": "value", "type": "uint256" }], "name": "Approval", "type": "event" }, { "anonymous": false, "inputs": [{ "indexed": true, "internalType": "address", "name": "previousOwner", "type": "address" }, { "indexed": true, "internalType": "address", "name": "newOwner", "type": "address" }], "name": "OwnershipTransferred", "type": "event" }, { "anonymous": false, "inputs": [{ "indexed": true, "internalType": "address", "name": "from", "type": "address" }, { "indexed": true, "internalType": "address", "name": "to", "type": "address" }, { "indexed": false, "internalType": "uint256", "name": "value", "type": "uint256" }], "name": "Transfer", "type": "event" }, { "inputs": [{ "internalType": "address", "name": "owner", "type": "address" }, { "internalType": "address", "name": "spender", "type": "address" }], "name": "allowance", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "view", "type": "function" }, { "inputs": [{ "internalType": "address", "name": "spender", "type": "address" }, { "internalType": "uint256", "name": "value", "type": "uint256" }], "name": "approve", "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }], "stateMutability": "nonpayable", "type": "function" }, { "inputs": [{ "internalType": "address", "name": "account", "type": "address" }], "name": "balanceOf", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "view", "type": "function" }, { "inputs": [{ "internalType": "uint256", "name": "amount", "type": "uint256" }], "name": "burn", "outputs": [], "stateMutability": "nonpayable", "type": "function" }, { "inputs": [], "name": "decimals", "outputs": [{ "internalType": "uint8", "name": "", "type": "uint8" }], "stateMutability": "view", "type": "function" }, { "inputs": [{ "internalType": "address", "name": "to", "type": "address" }, { "internalType": "uint256", "name": "amount", "type": "uint256" }], "name": "mint", "outputs": [], "stateMutability": "nonpayable", "type": "function" }, { "inputs": [], "name": "name", "outputs": [{ "internalType": "string", "name": "", "type": "string" }], "stateMutability": "view", "type": "function" }, { "inputs": [], "name": "owner", "outputs": [{ "internalType": "address", "name": "", "type": "address" }], "stateMutability": "view", "type": "function" }, { "inputs": [], "name": "renounceOwnership", "outputs": [], "stateMutability": "nonpayable", "type": "function" }, { "inputs": [], "name": "symbol", "outputs": [{ "internalType": "string", "name": "", "type": "string" }], "stateMutability": "view", "type": "function" }, { "inputs": [], "name": "totalSupply", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "view", "type": "function" }, { "inputs": [{ "internalType": "address", "name": "to", "type": "address" }, { "internalType": "uint256", "name": "value", "type": "uint256" }], "name": "transfer", "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }], "stateMutability": "nonpayable", "type": "function" }, { "inputs": [{ "internalType": "address", "name": "from", "type": "address" }, { "internalType": "address", "name": "to", "type": "address" }, { "internalType": "uint256", "name": "value", "type": "uint256" }], "name": "transferFrom", "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }], "stateMutability": "nonpayable", "type": "function" }, { "inputs": [{ "internalType": "address", "name": "newOwner", "type": "address" }], "name": "transferOwnership", "outputs": [], "stateMutability": "nonpayable", "type": "function" }] as const;
+export const STRATEGY_ABI = [{ "inputs": [{ "internalType": "address", "name": "_usdc", "type": "address" }, { "internalType": "address", "name": "_protocol", "type": "address" }, { "internalType": "address", "name": "_conservativeVault", "type": "address" }, { "internalType": "address", "name": "_balancedVault", "type": "address" }, { "internalType": "address", "name": "_aggressiveVault", "type": "address" }], "stateMutability": "nonpayable", "type": "constructor" }, { "inputs": [{ "internalType": "address", "name": "owner", "type": "address" }], "name": "OwnableInvalidOwner", "type": "error" }, { "inputs": [{ "internalType": "address", "name": "account", "type": "address" }], "name": "OwnableUnauthorizedAccount", "type": "error" }, { "inputs": [{ "internalType": "address", "name": "token", "type": "address" }], "name": "SafeERC20FailedOperation", "type": "error" }, { "anonymous": false, "inputs": [{ "indexed": true, "internalType": "address", "name": "previousOwner", "type": "address" }, { "indexed": true, "internalType": "address", "name": "newOwner", "type": "address" }], "name": "OwnershipTransferred", "type": "event" }, { "inputs": [], "name": "aggressiveVault", "outputs": [{ "internalType": "address", "name": "", "type": "address" }], "stateMutability": "view", "type": "function" }, { "inputs": [], "name": "asset", "outputs": [{ "internalType": "address", "name": "", "type": "address" }], "stateMutability": "view", "type": "function" }, { "inputs": [], "name": "balanceOf", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "view", "type": "function" }, { "inputs": [], "name": "balancedVault", "outputs": [{ "internalType": "address", "name": "", "type": "address" }], "stateMutability": "view", "type": "function" }, { "inputs": [], "name": "conservativeVault", "outputs": [{ "internalType": "address", "name": "", "type": "address" }], "stateMutability": "view", "type": "function" }, { "inputs": [{ "internalType": "uint256", "name": "amount", "type": "uint256" }], "name": "deposit", "outputs": [], "stateMutability": "nonpayable", "type": "function" }, { "inputs": [], "name": "getAPY", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "view", "type": "function" }, { "inputs": [], "name": "harvest", "outputs": [{ "internalType": "uint256", "name": "interest", "type": "uint256" }], "stateMutability": "nonpayable", "type": "function" }, { "inputs": [], "name": "owner", "outputs": [{ "internalType": "address", "name": "", "type": "address" }], "stateMutability": "view", "type": "function" }, { "inputs": [], "name": "protocol", "outputs": [{ "internalType": "contract IMockProtocol", "name": "", "type": "address" }], "stateMutability": "view", "type": "function" }, { "inputs": [], "name": "renounceOwnership", "outputs": [], "stateMutability": "nonpayable", "type": "function" }, { "inputs": [{ "internalType": "address", "name": "newOwner", "type": "address" }], "name": "transferOwnership", "outputs": [], "stateMutability": "nonpayable", "type": "function" }, { "inputs": [], "name": "usdc", "outputs": [{ "internalType": "contract IERC20", "name": "", "type": "address" }], "stateMutability": "view", "type": "function" }, { "inputs": [{ "internalType": "uint256", "name": "amount", "type": "uint256" }], "name": "withdraw", "outputs": [], "stateMutability": "nonpayable", "type": "function" }, { "inputs": [], "name": "withdrawAll", "outputs": [], "stateMutability": "nonpayable", "type": "function" }] as const;
+export const VAULT_ABI = [{ "inputs": [{ "internalType": "string", "name": "_name", "type": "string" }, { "internalType": "string", "name": "_symbol", "type": "string" }, { "internalType": "address", "name": "_asset", "type": "address" }, { "internalType": "uint256", "name": "_minRebalanceGap", "type": "uint256" }, { "internalType": "address", "name": "_feeRecipient", "type": "address" }], "stateMutability": "nonpayable", "type": "constructor" }, { "inputs": [{ "internalType": "address", "name": "spender", "type": "address" }, { "internalType": "uint256", "name": "allowance", "type": "uint256" }, { "internalType": "uint256", "name": "needed", "type": "uint256" }], "name": "ERC20InsufficientAllowance", "type": "error" }, { "inputs": [{ "internalType": "address", "name": "sender", "type": "address" }, { "internalType": "uint256", "name": "balance", "type": "uint256" }, { "internalType": "uint256", "name": "needed", "type": "uint256" }], "name": "ERC20InsufficientBalance", "type": "error" }, { "inputs": [{ "internalType": "address", "name": "approver", "type": "address" }], "name": "ERC20InvalidApprover", "type": "error" }, { "inputs": [{ "internalType": "address", "name": "receiver", "type": "address" }], "name": "ERC20InvalidReceiver", "type": "error" }, { "inputs": [{ "internalType": "address", "name": "sender", "type": "address" }], "name": "ERC20InvalidSender", "type": "error" }, { "inputs": [{ "internalType": "address", "name": "spender", "type": "address" }], "name": "ERC20InvalidSpender", "type": "error" }, { "inputs": [], "name": "EnforcedPause", "type": "error" }, { "inputs": [], "name": "ExpectedPause", "type": "error" }, { "inputs": [{ "internalType": "address", "name": "owner", "type": "address" }], "name": "OwnableInvalidOwner", "type": "error" }, { "inputs": [{ "internalType": "address", "name": "account", "type": "address" }], "name": "OwnableUnauthorizedAccount", "type": "error" }, { "inputs": [], "name": "ReentrancyGuardReentrantCall", "type": "error" }, { "inputs": [{ "internalType": "address", "name": "token", "type": "address" }], "name": "SafeERC20FailedOperation", "type": "error" }, { "anonymous": false, "inputs": [{ "indexed": true, "internalType": "address", "name": "owner", "type": "address" }, { "indexed": true, "internalType": "address", "name": "spender", "type": "address" }, { "indexed": false, "internalType": "uint256", "name": "value", "type": "uint256" }], "name": "Approval", "type": "event" }, { "anonymous": false, "inputs": [{ "indexed": false, "internalType": "uint256", "name": "earned", "type": "uint256" }, { "indexed": false, "internalType": "uint256", "name": "fee", "type": "uint256" }, { "indexed": false, "internalType": "uint256", "name": "timestamp", "type": "uint256" }], "name": "Compounded", "type": "event" }, { "anonymous": false, "inputs": [{ "indexed": true, "internalType": "address", "name": "user", "type": "address" }, { "indexed": false, "internalType": "uint256", "name": "assets", "type": "uint256" }, { "indexed": false, "internalType": "uint256", "name": "shares", "type": "uint256" }], "name": "Deposit", "type": "event" }, { "anonymous": false, "inputs": [{ "indexed": true, "internalType": "address", "name": "previousOwner", "type": "address" }, { "indexed": true, "internalType": "address", "name": "newOwner", "type": "address" }], "name": "OwnershipTransferred", "type": "event" }, { "anonymous": false, "inputs": [{ "indexed": false, "internalType": "address", "name": "account", "type": "address" }], "name": "Paused", "type": "event" }, { "anonymous": false, "inputs": [{ "indexed": false, "internalType": "uint256", "name": "timestamp", "type": "uint256" }, { "indexed": false, "internalType": "uint256", "name": "totalAssets", "type": "uint256" }], "name": "Rebalanced", "type": "event" }, { "anonymous": false, "inputs": [{ "indexed": true, "internalType": "address", "name": "user", "type": "address" }, { "indexed": false, "internalType": "uint256", "name": "shares", "type": "uint256" }, { "indexed": false, "internalType": "uint256", "name": "assets", "type": "uint256" }], "name": "Redeem", "type": "event" }, { "anonymous": false, "inputs": [{ "indexed": false, "internalType": "address", "name": "strategy", "type": "address" }], "name": "StrategyAdded", "type": "event" }, { "anonymous": false, "inputs": [{ "indexed": false, "internalType": "address", "name": "strategy", "type": "address" }], "name": "StrategyRemoved", "type": "event" }, { "anonymous": false, "inputs": [{ "indexed": true, "internalType": "address", "name": "from", "type": "address" }, { "indexed": true, "internalType": "address", "name": "to", "type": "address" }, { "indexed": false, "internalType": "uint256", "name": "value", "type": "uint256" }], "name": "Transfer", "type": "event" }, { "anonymous": false, "inputs": [{ "indexed": false, "internalType": "address", "name": "account", "type": "address" }], "name": "Unpaused", "type": "event" }, { "inputs": [{ "internalType": "address", "name": "_strategy", "type": "address" }], "name": "addStrategy", "outputs": [], "stateMutability": "nonpayable", "type": "function" }, { "inputs": [{ "internalType": "address", "name": "owner", "type": "address" }, { "internalType": "address", "name": "spender", "type": "address" }], "name": "allowance", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "view", "type": "function" }, { "inputs": [{ "internalType": "address", "name": "spender", "type": "address" }, { "internalType": "uint256", "name": "value", "type": "uint256" }], "name": "approve", "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }], "stateMutability": "nonpayable", "type": "function" }, { "inputs": [], "name": "asset", "outputs": [{ "internalType": "contract IERC20", "name": "", "type": "address" }], "stateMutability": "view", "type": "function" }, { "inputs": [{ "internalType": "address", "name": "account", "type": "address" }], "name": "balanceOf", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "view", "type": "function" }, { "inputs": [], "name": "compound", "outputs": [], "stateMutability": "nonpayable", "type": "function" }, { "inputs": [], "name": "decimals", "outputs": [{ "internalType": "uint8", "name": "", "type": "uint8" }], "stateMutability": "view", "type": "function" }, { "inputs": [{ "internalType": "uint256", "name": "assets", "type": "uint256" }], "name": "deposit", "outputs": [], "stateMutability": "nonpayable", "type": "function" }, { "inputs": [], "name": "feeRecipient", "outputs": [{ "internalType": "address", "name": "", "type": "address" }], "stateMutability": "view", "type": "function" }, { "inputs": [], "name": "minRebalanceGap", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "view", "type": "function" }, { "inputs": [], "name": "name", "outputs": [{ "internalType": "string", "name": "", "type": "string" }], "stateMutability": "view", "type": "function" }, { "inputs": [], "name": "owner", "outputs": [{ "internalType": "address", "name": "", "type": "address" }], "stateMutability": "view", "type": "function" }, { "inputs": [], "name": "paused", "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }], "stateMutability": "view", "type": "function" }, { "inputs": [], "name": "performanceFee", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "view", "type": "function" }, { "inputs": [], "name": "rebalance", "outputs": [], "stateMutability": "nonpayable", "type": "function" }, { "inputs": [{ "internalType": "uint256", "name": "shares", "type": "uint256" }], "name": "redeem", "outputs": [], "stateMutability": "nonpayable", "type": "function" }, { "inputs": [{ "internalType": "uint256", "name": "index", "type": "uint256" }], "name": "removeStrategy", "outputs": [], "stateMutability": "nonpayable", "type": "function" }, { "inputs": [], "name": "renounceOwnership", "outputs": [], "stateMutability": "nonpayable", "type": "function" }, { "inputs": [], "name": "sharePrice", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "view", "type": "function" }, { "inputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "name": "strategies", "outputs": [{ "internalType": "contract IStrategy", "name": "", "type": "address" }], "stateMutability": "view", "type": "function" }, { "inputs": [], "name": "symbol", "outputs": [{ "internalType": "string", "name": "", "type": "string" }], "stateMutability": "view", "type": "function" }, { "inputs": [], "name": "totalAssets", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "view", "type": "function" }, { "inputs": [], "name": "totalSupply", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "view", "type": "function" }, { "inputs": [{ "internalType": "address", "name": "to", "type": "address" }, { "internalType": "uint256", "name": "value", "type": "uint256" }], "name": "transfer", "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }], "stateMutability": "nonpayable", "type": "function" }, { "inputs": [{ "internalType": "address", "name": "from", "type": "address" }, { "internalType": "address", "name": "to", "type": "address" }, { "internalType": "uint256", "name": "value", "type": "uint256" }], "name": "transferFrom", "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }], "stateMutability": "nonpayable", "type": "function" }, { "inputs": [{ "internalType": "address", "name": "newOwner", "type": "address" }], "name": "transferOwnership", "outputs": [], "stateMutability": "nonpayable", "type": "function" }] as const;

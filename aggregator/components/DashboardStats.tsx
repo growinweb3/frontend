@@ -3,11 +3,11 @@
 import { useAccount } from 'wagmi'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { 
-  usePortfolioValue, 
-  useTotalValueLocked, 
+import {
+  usePortfolioValue,
+  useTotalValueLocked,
   useUserBalances,
-  useFormatTokenAmount 
+  useFormatTokenAmount
 } from '@/hooks/useContracts'
 import { TrendingUp, DollarSign, PieChart, Target } from 'lucide-react'
 import { SUPPORTED_ASSETS } from '@/lib/contracts'
@@ -15,18 +15,18 @@ import { SUPPORTED_ASSETS } from '@/lib/contracts'
 export function DashboardStats() {
   const { address } = useAccount()
   const { formatAmount } = useFormatTokenAmount()
-  
+
   // Global stats
   const { data: portfolioValue, isLoading: portfolioLoading } = usePortfolioValue(address)
   const { data: totalValueLocked, isLoading: tvlLoading } = useTotalValueLocked()
-  
+
   // User balances for each asset
   const userBalances = useUserBalances(address)
 
   // Calculate total portfolio value in USD (assuming 1:1 for stablecoins)
-  const totalPortfolioUSD = userBalances.reduce((total, { vaultBalance }) => {
+  const totalPortfolioUSD = userBalances?.reduce((total, { vaultBalance }) => {
     return total + (vaultBalance ? parseFloat(formatAmount(vaultBalance, 6)) : 0)
-  }, 0)
+  }, 0) || 0
 
   // Calculate weighted average APY (simplified)
   const weightedAPY = 8.5 // This would be calculated based on actual vault APYs
@@ -76,9 +76,9 @@ export function DashboardStats() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-white">
-              {userBalances.filter(({ vaultBalance }) => 
+              {userBalances?.filter(({ vaultBalance }) =>
                 vaultBalance && vaultBalance > BigInt(0)
-              ).length}
+              ).length || 0}
             </div>
             <p className="text-xs text-white/50 mt-1">
               Of {SUPPORTED_ASSETS.length} available
@@ -114,7 +114,7 @@ export function DashboardStats() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {userBalances.map(({ asset, vaultBalance, tokenBalance }) => {
+              {userBalances?.map(({ asset, vaultBalance, tokenBalance }) => {
                 const hasPosition = vaultBalance && vaultBalance > BigInt(0)
                 return (
                   <div key={asset.address} className="flex items-center justify-between p-4 rounded-lg bg-white/5 border border-white/10">
@@ -127,7 +127,7 @@ export function DashboardStats() {
                         <p className="text-white/60 text-sm">{asset.symbol}</p>
                       </div>
                     </div>
-                    
+
                     <div className="text-right">
                       <div className="flex items-center gap-2">
                         <div className="text-white font-medium">
@@ -139,9 +139,6 @@ export function DashboardStats() {
                           </Badge>
                         )}
                       </div>
-                      <p className="text-white/60 text-sm">
-                        Wallet: {formatAmount(tokenBalance, asset.decimals)} {asset.symbol}
-                      </p>
                     </div>
                   </div>
                 )

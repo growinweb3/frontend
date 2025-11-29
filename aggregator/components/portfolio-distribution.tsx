@@ -23,18 +23,18 @@ export function PortfolioDistribution() {
   const { formatAmount } = useFormatTokenAmount()
 
   // Calculate total portfolio value
-  const totalValue = userBalances.reduce((sum, { vaultBalance }) => 
+  const totalValue = userBalances?.reduce((sum, { vaultBalance }) =>
     sum + (vaultBalance ? parseFloat(formatAmount(vaultBalance, 6)) : 0), 0
-  )
+  ) || 0
 
   // Build distributions from real data
-  const distributions = userBalances.map(({ asset, vaultBalance }, index) => {
+  const distributions = userBalances?.map(({ asset, vaultBalance }, index) => {
     const balance = vaultBalance ? parseFloat(formatAmount(vaultBalance, 6)) : 0
     const percentage = totalValue > 0 ? (balance / totalValue) * 100 : 0
     const vaultTypes = [VaultType.CONSERVATIVE, VaultType.BALANCED, VaultType.AGGRESSIVE]
     const vaultType = vaultTypes[index % 3]
     const config = VAULT_CONFIGS[vaultType]
-    
+
     return {
       token: asset.symbol,
       vault: config.name,
@@ -44,7 +44,7 @@ export function PortfolioDistribution() {
       apy: `${((config.targetAPY.min + config.targetAPY.max) / 2).toFixed(1)}%`,
       risk: VAULT_RISK_SCORES[vaultType],
     }
-  }).filter(d => parseFloat(d.amount.slice(1)) > 0) // Only show non-zero positions
+  }).filter(d => parseFloat(d.amount.slice(1)) > 0) || [] // Only show non-zero positions
 
   // Show placeholder if no positions
   if (distributions.length === 0) {

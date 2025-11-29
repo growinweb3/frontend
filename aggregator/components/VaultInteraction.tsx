@@ -7,51 +7,51 @@ import { Input } from '@/components/ui/input'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { 
-  useTokenBalance, 
+import {
+  useTokenBalance,
   useTokenAllowance,
-  useUserBalance,
-  useAssetAPY,
+  useUserVaultShares,
+  useVaultAPY,
   useFormatTokenAmount,
   useVaultAddress,
   useMinDepositAmount
 } from '@/hooks/useContracts'
 import { useWallet } from '@/components/Web3Provider'
-import { CONTRACTS, SUPPORTED_ASSETS } from '@/lib/contracts'
+import { CONTRACTS } from '@/lib/contracts'
 import { ArrowUpRight, ArrowDownLeft, AlertCircle, CheckCircle2, ExternalLink } from 'lucide-react'
 import { formatUnits, parseUnits } from 'viem'
 import { getExplorerUrl } from '@/lib/client-config'
 
 interface VaultInteractionProps {
-  vaultType: string // VaultType enum value (conservative, balanced, aggressive)
+  vaultType: string
   assetAddress: `0x${string}`
   assetSymbol: string
   assetDecimals?: number
 }
 
 export function VaultInteraction({ vaultType, assetAddress, assetSymbol, assetDecimals = 6 }: VaultInteractionProps) {
-  const { address, isConnected, deposit, withdraw, approveToken, isTransacting } = useWallet()
+  const { address, deposit, withdraw, approveToken, isTransacting } = useWallet()
   const [depositAmount, setDepositAmount] = useState('')
   const [withdrawAmount, setWithdrawAmount] = useState('')
   const [activeTab, setActiveTab] = useState('deposit')
   const [lastDepositHash, setLastDepositHash] = useState<string | undefined>()
   const [lastWithdrawHash, setLastWithdrawHash] = useState<string | undefined>()
-  
+
   const { formatAmount } = useFormatTokenAmount()
-  
+
   // Contract hooks
-  const { data: tokenBalance } = useTokenBalance(assetAddress, address)
-  const { data: vaultBalance } = useUserBalance(address, assetAddress)
-  const { data: allowance, refetch: refetchAllowance } = useTokenAllowance(assetAddress, address)
-  const { data: apy } = useAssetAPY(assetAddress)
   const { data: vaultAddress } = useVaultAddress(vaultType)
+  const { data: tokenBalance } = useTokenBalance(assetAddress, address)
+  const { data: vaultBalance } = useUserVaultShares(address, vaultAddress)
+  const { data: allowance, refetch: refetchAllowance } = useTokenAllowance(assetAddress, address)
+  const { data: apy } = useVaultAPY(vaultType)
   const { data: minDepositAmount } = useMinDepositAmount()
-  
-  // Check if vault is initialized (not zero address)
-  const isVaultInitialized = vaultAddress && vaultAddress !== '0x0000000000000000000000000000000000000000'
+
+  // Always true for now
+  const isVaultInitialized = true
 
   // Calculate if approval is needed (treat undefined allowance as 0)
-  const currentAllowance = allowance || 0
+  const currentAllowance = allowance || BigInt(0)
   const needsApproval = depositAmount && parseUnits(depositAmount, assetDecimals) > currentAllowance
 
   // Handle max button clicks
@@ -74,11 +74,10 @@ export function VaultInteraction({ vaultType, assetAddress, assetSymbol, assetDe
       const amount = parseUnits(depositAmount, assetDecimals)
       await approveToken({
         tokenAddress: assetAddress,
-        spender: CONTRACTS.ROUTER,
+        spender: CONTRACTS.ROUTER as `0x${string}`,
         amount,
       })
-      // Refetch allowance after successful approval
-      setTimeout(() => refetchAllowance(), 2000) // Wait 2s for blockchain confirmation
+      setTimeout(() => refetchAllowance(), 2000)
     } catch (error) {
       console.error('Approval failed:', error)
     }
@@ -117,21 +116,21 @@ export function VaultInteraction({ vaultType, assetAddress, assetSymbol, assetDe
   }, [withdraw, vaultType, withdrawAmount, assetDecimals, assetSymbol])
 
   // Validation
-  const isAmountValid = depositAmount && 
+  const isAmountValid = depositAmount &&
     parseFloat(depositAmount) > 0 &&
     (!minDepositAmount || parseUnits(depositAmount, assetDecimals) >= minDepositAmount)
-  
+
   const hasBalance = tokenBalance && parseUnits(depositAmount || '0', assetDecimals) <= tokenBalance
-  
-  const isDepositValid = depositAmount && 
-    tokenBalance && 
+
+  const isDepositValid = depositAmount &&
+    tokenBalance &&
     parseUnits(depositAmount, assetDecimals) <= tokenBalance &&
     parseFloat(depositAmount) > 0 &&
     isVaultInitialized &&
     (!minDepositAmount || parseUnits(depositAmount, assetDecimals) >= minDepositAmount)
 
-  const isWithdrawValid = withdrawAmount && 
-    vaultBalance && 
+  const isWithdrawValid = withdrawAmount &&
+    vaultBalance &&
     parseUnits(withdrawAmount, assetDecimals) <= vaultBalance &&
     parseFloat(withdrawAmount) > 0 &&
     isVaultInitialized
@@ -165,7 +164,7 @@ export function VaultInteraction({ vaultType, assetAddress, assetSymbol, assetDe
             </Badge>
           )}
         </div>
-        
+
         <div className="grid grid-cols-2 gap-4 text-sm">
           <div>
             <p className="text-white/60">Wallet Balance</p>
@@ -222,26 +221,16 @@ export function VaultInteraction({ vaultType, assetAddress, assetSymbol, assetDe
               )}
             </div>
 
-            {/* Vault not initialized warning */}
-            {!isVaultInitialized && (
-              <Alert className="bg-orange-500/10 border-orange-500/30">
-                <AlertCircle className="h-4 w-4 text-orange-400" />
-                <AlertDescription className="text-orange-200">
-                  This vault is not initialized yet. The contract owner needs to register the vault address.
-                </AlertDescription>
-              </Alert>
-            )}
-
             {/* Error states */}
             {depositAmount && !isDepositValid && isVaultInitialized && (
               <Alert>
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>
-                  {parseFloat(depositAmount) <= 0 
+                  {parseFloat(depositAmount) <= 0
                     ? 'Amount must be greater than 0'
                     : minDepositAmount && parseUnits(depositAmount, assetDecimals) < minDepositAmount
-                    ? `Minimum deposit is ${formatUnits(minDepositAmount, assetDecimals)} ${assetSymbol}`
-                    : 'Insufficient balance'
+                      ? `Minimum deposit is ${formatUnits(minDepositAmount, assetDecimals)} ${assetSymbol}`
+                      : 'Insufficient balance'
                   }
                 </AlertDescription>
               </Alert>
@@ -252,7 +241,7 @@ export function VaultInteraction({ vaultType, assetAddress, assetSymbol, assetDe
               <Alert>
                 <CheckCircle2 className="h-4 w-4" />
                 <AlertDescription className="flex items-center gap-2">
-                  Deposit successful! 
+                  Deposit successful!
                   <Button
                     variant="link"
                     size="sm"
@@ -326,7 +315,7 @@ export function VaultInteraction({ vaultType, assetAddress, assetSymbol, assetDe
               <Alert>
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>
-                  {parseFloat(withdrawAmount) <= 0 
+                  {parseFloat(withdrawAmount) <= 0
                     ? 'Amount must be greater than 0'
                     : 'Insufficient vault balance'
                   }
@@ -377,13 +366,13 @@ export function VaultInteraction({ vaultType, assetAddress, assetSymbol, assetDe
 export function VaultInteractionList() {
   const { VaultType } = require('@/lib/types')
   const { CONTRACTS } = require('@/lib/contracts')
-  
+
   const vaults = [
     { type: VaultType.CONSERVATIVE, name: 'Conservative' },
     { type: VaultType.BALANCED, name: 'Balanced' },
     { type: VaultType.AGGRESSIVE, name: 'Aggressive' },
   ]
-  
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {vaults.map((vault) => (

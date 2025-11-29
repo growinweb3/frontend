@@ -1,6 +1,15 @@
+"use client";
+
 import { ConnectWallet } from "./ConnectWallet";
+import { useAccount } from "wagmi";
+import { useTokenBalance, useFormatTokenAmount } from "@/hooks/useContracts";
+import { CONTRACTS } from "@/lib/contracts";
 
 export function PageLayout({ children }: { children: React.ReactNode }) {
+  const { address } = useAccount();
+  const { data: tokenBalance } = useTokenBalance(CONTRACTS.MOCK_USDC, address);
+  const { formatAmount } = useFormatTokenAmount();
+
   return (
     <div className="min-h-screen bg-[#050510] text-white overflow-hidden relative">
       {/* Background gradient orbs */}
@@ -19,7 +28,17 @@ export function PageLayout({ children }: { children: React.ReactNode }) {
             </div>
             <span className="font-sans text-xl font-bold tracking-tight">Growish</span>
           </div>
-          <ConnectWallet />
+          <div className="flex items-center gap-4">
+            {address && tokenBalance && (
+              <div className="hidden md:flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10">
+                <span className="text-sm text-white/60">Balance:</span>
+                <span className="text-sm font-medium text-white">
+                  {formatAmount(tokenBalance, 6)} USDC
+                </span>
+              </div>
+            )}
+            <ConnectWallet />
+          </div>
         </header>
 
         {children}
