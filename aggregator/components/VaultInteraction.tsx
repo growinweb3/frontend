@@ -42,8 +42,9 @@ export function VaultInteraction({ vaultType, assetAddress, assetSymbol, assetDe
   // Contract hooks
   const { data: vaultAddress } = useVaultAddress(vaultType)
   const { data: tokenBalance } = useTokenBalance(assetAddress, address)
-  const { data: vaultBalance } = useUserVaultShares(address, vaultAddress)
+  const { data: vaultBalance } = useUserVaultShares(address, vaultAddress, vaultType)
   const { data: allowance, refetch: refetchAllowance } = useTokenAllowance(assetAddress, address)
+  const { data: vaultShareAllowance, refetch: refetchVaultAllowance } = useTokenAllowance(vaultAddress, address)
   const { data: apy } = useVaultAPY(vaultType)
   const { data: minDepositAmount } = useMinDepositAmount()
 
@@ -53,6 +54,10 @@ export function VaultInteraction({ vaultType, assetAddress, assetSymbol, assetDe
   // Calculate if approval is needed (treat undefined allowance as 0)
   const currentAllowance = allowance || BigInt(0)
   const needsApproval = depositAmount && parseUnits(depositAmount, assetDecimals) > currentAllowance
+
+  // Calculate if vault share approval is needed for withdrawals
+  const currentVaultAllowance = vaultShareAllowance || BigInt(0)
+  const needsWithdrawApproval = withdrawAmount && parseUnits(withdrawAmount, assetDecimals) > currentVaultAllowance
 
   // Handle max button clicks
   const handleMaxDeposit = useCallback(() => {
@@ -82,6 +87,25 @@ export function VaultInteraction({ vaultType, assetAddress, assetSymbol, assetDe
       console.error('Approval failed:', error)
     }
   }, [approveToken, assetAddress, depositAmount, assetDecimals, refetchAllowance])
+
+  const handleApproveVaultShares = useCallback(async () => {
+    if (!vaultAddress) return
+    try {
+      // Use max uint256 for better UX, but with guardrails:
+      // - Only approve Router contract (trusted)
+      // - User must have vault shares to approve
+      // - Clear warning in UI about what's being approved
+      const maxApproval = BigInt('0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff')
+      await approveToken({
+        tokenAddress: vaultAddress,
+        spender: CONTRACTS.ROUTER as `0x${string}`,
+        amount: maxApproval,
+      })
+      setTimeout(() => refetchVaultAllowance(), 2000)
+    } catch (error) {
+      console.error('Vault share approval failed:', error)
+    }
+  }, [approveToken, vaultAddress, refetchVaultAllowance])
 
   const handleDeposit = useCallback(async () => {
     if (!depositAmount) return
@@ -323,6 +347,16 @@ export function VaultInteraction({ vaultType, assetAddress, assetSymbol, assetDe
               </Alert>
             )}
 
+            {/* Approval info for vault shares */}
+            {needsWithdrawApproval && withdrawAmount && isWithdrawValid && (
+              <Alert>
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription className="text-xs">
+                  One-time approval needed to withdraw vault shares via Router contract
+                </AlertDescription>
+              </Alert>
+            )}
+
             {/* Success states */}
             {lastWithdrawHash && (
               <Alert>
@@ -341,20 +375,38 @@ export function VaultInteraction({ vaultType, assetAddress, assetSymbol, assetDe
               </Alert>
             )}
 
-            <Button
-              onClick={handleWithdraw}
-              disabled={!isWithdrawValid || isTransacting}
-              className="w-full bg-blue-600 hover:bg-blue-700"
-            >
-              {isTransacting ? (
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 border-2 border-white/20 border-t-white animate-spin rounded-full" />
-                  Withdrawing...
-                </div>
-              ) : (
-                'Withdraw'
-              )}
-            </Button>
+            {/* Action buttons */}
+            {needsWithdrawApproval ? (
+              <Button
+                onClick={handleApproveVaultShares}
+                disabled={!isWithdrawValid || isTransacting}
+                className="w-full bg-orange-600 hover:bg-orange-700"
+              >
+                {isTransacting ? (
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 border-2 border-white/20 border-t-white animate-spin rounded-full" />
+                    Approving...
+                  </div>
+                ) : (
+                  'Approve Vault Shares'
+                )}
+              </Button>
+            ) : (
+              <Button
+                onClick={handleWithdraw}
+                disabled={!isWithdrawValid || isTransacting}
+                className="w-full bg-blue-600 hover:bg-blue-700"
+              >
+                {isTransacting ? (
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 border-2 border-white/20 border-t-white animate-spin rounded-full" />
+                    Withdrawing...
+                  </div>
+                ) : (
+                  'Withdraw'
+                )}
+              </Button>
+            )}
           </TabsContent>
         </Tabs>
       </CardContent>

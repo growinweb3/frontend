@@ -1,5 +1,6 @@
 "use client"
 
+import { memo } from "react"
 import { VaultType } from "@/lib/types"
 import { VAULT_CONFIGS, VAULT_COLORS, RISK_COLORS } from "@/lib/constants"
 import { TrendingUp, Shield, Zap, DollarSign, Clock } from "lucide-react"
@@ -28,20 +29,20 @@ export function VaultCard({ vaultType, onDeposit }: VaultCardProps) {
   const { address } = useAccount()
   const { formatAmount } = useFormatTokenAmount()
 
-  const { data: vaultAddress } = useVaultAddress(vaultType)
-  const { data: totalAssets } = useVaultTotalAssets(vaultAddress)
-  const { data: pendingDeposits } = useTotalPendingDeposits(vaultType)
-  const { data: pendingWithdraws } = useTotalPendingWithdraws(vaultType)
-  const { data: apy } = useVaultWeightedAPY(vaultType)
-  const { data: userShares } = useUserVaultShares(address, vaultAddress)
+  // Strict type assertion - ensure vaultType is exactly VaultType enum
+  const strictVaultType: VaultType = vaultType as VaultType
+  
+  const { data: vaultAddress } = useVaultAddress(strictVaultType)
+  const { data: totalAssets } = useVaultTotalAssets(vaultAddress, strictVaultType)
+  const { data: pendingDeposits } = useTotalPendingDeposits(strictVaultType)
+  const { data: pendingWithdraws } = useTotalPendingWithdraws(strictVaultType)
+  const { data: apy } = useVaultWeightedAPY(strictVaultType)
+  const { data: userShares } = useUserVaultShares(address, vaultAddress, strictVaultType)
 
   const { data: strategies } = useVaultStrategyDistribution(vaultAddress)
-  const { data: nextBatchTime } = useNextBatchTime(vaultType)
+  const { data: nextBatchTime } = useNextBatchTime(strictVaultType)
 
-  console.log(`[VaultCard] ${vaultType}:`, {
-    vaultAddress,
-    totalAssets: totalAssets?.toString()
-  })
+
 
   // Format values
   const totalDeposited = totalAssets ? parseFloat(formatUnits(totalAssets, 6)) : 0
@@ -54,6 +55,37 @@ export function VaultCard({ vaultType, onDeposit }: VaultCardProps) {
   const riskColor = RISK_COLORS[config.riskLevel]
 
   const displayAPY = currentAPY || (config.targetAPY.min + config.targetAPY.max) / 2
+
+    // Enhanced debug logging
+  console.group(`🎴 [VaultCard] ${strictVaultType}`)
+  console.log('📋 Props & Type:', {
+    vaultType: strictVaultType,
+    typeOf: typeof strictVaultType,
+    rawProp: vaultType
+  })
+  console.log('🏦 Vault Data:', {
+    vaultAddress,
+    expectedAddress: strictVaultType === VaultType.CONSERVATIVE ? '0x6E69Ed7A9b7F4b1De965328738b3d7Bb757Ea94c' :
+                     strictVaultType === VaultType.BALANCED ? '0x21AF332B10481972B903cBd6C3f1ec51546552e7' :
+                     strictVaultType === VaultType.AGGRESSIVE ? '0xc4E50772bd6d27661EE12d81e62Daa4882F4E6f4' : 'unknown',
+    addressMatch: vaultAddress === (
+      strictVaultType === VaultType.CONSERVATIVE ? '0x6E69Ed7A9b7F4b1De965328738b3d7Bb757Ea94c' :
+      strictVaultType === VaultType.BALANCED ? '0x21AF332B10481972B903cBd6C3f1ec51546552e7' :
+      strictVaultType === VaultType.AGGRESSIVE ? '0xc4E50772bd6d27661EE12d81e62Daa4882F4E6f4' : 'unknown'
+    )
+  })
+  console.log('📊 Raw Values:', {
+    totalAssets: totalAssets?.toString(),
+    apy: apy?.toString(),
+    pendingDeposits: pendingDeposits?.toString()
+  })
+  console.log('💵 Formatted Values:', {
+    totalDeposited,
+    currentAPY,
+    displayAPY,
+    pendingDepositAmount
+  })
+  console.groupEnd()
 
   const getVaultIcon = () => {
     switch (vaultType) {
@@ -209,3 +241,5 @@ export function VaultCard({ vaultType, onDeposit }: VaultCardProps) {
     </div>
   )
 }
+
+export default memo(VaultCard)

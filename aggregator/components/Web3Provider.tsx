@@ -2,35 +2,35 @@
 
 import { createContext, useContext, type ReactNode, useEffect, useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { WagmiProvider, type Config, useAccount, useDisconnect, useBalance, useWriteContract, usePublicClient } from "wagmi";
+import { WagmiProvider, type Config, useWriteContract } from "wagmi";
+import { useAccount, useBalance, useDisconnect } from "wagmi";
 import { XellarKitProvider, defaultConfig, darkTheme, useConnectModal } from "@xellar/kit";
 import { liskSepolia, getExplorerUrl } from "@/lib/client-config";
 import { useToast } from "@/hooks/use-toast";
-import { handleWalletError, validateAmount } from "@/lib/errors";
+import { handleWalletError, handleTransactionError, validateAmount } from "@/lib/errors";
 import { CONTRACTS, ROUTER_ABI, USDC_ABI } from "@/lib/contracts";
-import { vaultTypeToRiskLevel } from "@/lib/utils";
 import type { Address } from "viem";
 
 // Create QueryClient for TanStack Query
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 60_000, // 1 minute
-      gcTime: 5 * 60_000, // 5 minutes
+      staleTime: 0, // 1 minute
+      gcTime: 0, // 5 minutes
       refetchOnWindowFocus: false,
     },
   },
 });
 
 type DepositParams = {
-  vaultType: string;
+  vaultType: string; // VaultType enum value (conservative, balanced, aggressive)
   amount: bigint;
   assetSymbol?: string;
 };
 
 type WithdrawParams = {
-  vaultType: string;
-  shares: bigint;
+  vaultType: string; // VaultType enum value (conservative, balanced, aggressive)
+  shares: bigint; // Amount of vault shares to withdraw
   assetSymbol?: string;
 };
 
@@ -62,7 +62,7 @@ const WalletContext = createContext<WalletContextType>({
   connect: async () => {
     console.warn("Connect function should be triggered by XellarKit UI components.");
   },
-  disconnect: () => { },
+  disconnect: () => {},
   deposit: async () => ({ txHash: "0x0" }),
   withdraw: async () => ({ txHash: "0x0" }),
   approveToken: async () => ({ txHash: "0x0" }),
@@ -81,18 +81,18 @@ function WalletStateController({ children }: { children: ReactNode }) {
   const { address, isConnected, status, chainId } = useAccount();
   const { data: balanceData } = useBalance({ address });
   const { disconnect: wagmiDisconnect } = useDisconnect();
-  const { open: openConnectModal } = useConnectModal();
   const { writeContractAsync } = useWriteContract();
-  const publicClient = usePublicClient();
+  const { open: openConnectModal } = useConnectModal();
 
-  const balance = balanceData?.value
+  const balance = balanceData?.value 
     ? (Number(balanceData.value) / 10 ** (balanceData.decimals ?? 18)).toFixed(4)
-    : "0.0000";
+    : "0.0000";  // const balance = balanceData?.formatted ?? "0";
 
   // Monitor wallet connection status
   useEffect(() => {
     if (status === "connected") {
       console.log("Wallet connected successfully:", address);
+      console.log("Chain ID:", chainId);
 
       // Check if on correct network
       if (chainId !== liskSepolia.id) {
@@ -102,15 +102,19 @@ function WalletStateController({ children }: { children: ReactNode }) {
           description: `Please switch to Lisk Sepolia network`,
         });
       }
+    } else if (status === "disconnected") {
+      console.log("Wallet disconnected");
     }
   }, [status, address, chainId, toast]);
 
   const connect = async () => {
+    console.log("Opening wallet connection modal...");
     openConnectModal();
   };
 
   const disconnect = () => {
     wagmiDisconnect();
+    console.log("Wallet disconnect initiated");
     toast({
       title: "Wallet Disconnected",
       description: "Your wallet has been disconnected.",
@@ -120,6 +124,7 @@ function WalletStateController({ children }: { children: ReactNode }) {
   const deposit = async (params: DepositParams): Promise<{ txHash: string }> => {
     const { vaultType, amount, assetSymbol = "USDC" } = params;
 
+    // Validation
     const validation = validateAmount(amount);
     if (!validation.isValid) {
       handleWalletError(new Error(validation.error || "Invalid amount"), { toast });
@@ -139,26 +144,32 @@ function WalletStateController({ children }: { children: ReactNode }) {
     setIsTransacting(true);
 
     try {
+      // Convert VaultType to RiskLevel (0=Conservative, 1=Balanced, 2=Aggressive)
+      const { vaultTypeToRiskLevel } = await import("@/lib/utils");
       const riskLevel = vaultTypeToRiskLevel(vaultType);
 
-      // Check allowance first
-      if (publicClient) {
-        const allowance = await publicClient.readContract({
-          address: CONTRACTS.MOCK_USDC as Address,
-          abi: USDC_ABI,
-          functionName: "allowance",
-          args: [address, CONTRACTS.ROUTER as Address],
-        }) as bigint;
+      // Check USDC allowance before deposit
+      const { createPublicClient, http } = await import("viem");
+      const publicClient = createPublicClient({
+        chain: liskSepolia,
+        transport: http(),
+      });
 
-        if (allowance < amount) {
-          const error = `Insufficient ${assetSymbol} allowance. Please approve ${assetSymbol} spending first.`;
-          toast({
-            variant: "destructive",
-            title: "Approval Required",
-            description: error,
-          });
-          throw new Error(error);
-        }
+      const allowance = await publicClient.readContract({
+        address: CONTRACTS.MOCK_USDC,
+        abi: USDC_ABI,
+        functionName: "allowance",
+        args: [address, CONTRACTS.ROUTER],
+      }) as bigint;
+
+      if (allowance < amount) {
+        const error = `Insufficient ${assetSymbol} allowance. Please approve ${assetSymbol} spending first.`;
+        toast({
+          variant: "destructive",
+          title: "Approval Required",
+          description: error,
+        });
+        throw new Error(error);
       }
 
       toast({
@@ -167,7 +178,7 @@ function WalletStateController({ children }: { children: ReactNode }) {
       });
 
       const txHash = await writeContractAsync({
-        address: CONTRACTS.ROUTER as Address,
+        address: CONTRACTS.ROUTER,
         abi: ROUTER_ABI,
         functionName: "deposit",
         args: [amount, riskLevel],
@@ -193,13 +204,14 @@ function WalletStateController({ children }: { children: ReactNode }) {
       });
 
       // Invalidate relevant queries
-      queryClient.invalidateQueries({ queryKey: ["usePendingDeposit"] });
-      queryClient.invalidateQueries({ queryKey: ["useTokenBalance"] });
+      queryClient.invalidateQueries({ queryKey: ["usePortfolioValue"] });
+      queryClient.invalidateQueries({ queryKey: ["useUserBalance"] });
+      queryClient.invalidateQueries({ queryKey: ["useTVL"] });
 
       return { txHash };
     } catch (error: any) {
       console.error("Deposit error:", error);
-      handleWalletError(error, { toast });
+      handleTransactionError(error, { toast, action: "deposit" });
       throw error;
     } finally {
       setIsTransacting(false);
@@ -207,8 +219,9 @@ function WalletStateController({ children }: { children: ReactNode }) {
   };
 
   const withdraw = async (params: WithdrawParams): Promise<{ txHash: string }> => {
-    const { vaultType, shares } = params;
+    const { vaultType, shares, assetSymbol = "USDC" } = params;
 
+    // Validation
     const validation = validateAmount(shares);
     if (!validation.isValid) {
       handleWalletError(new Error(validation.error || "Invalid amount"), { toast });
@@ -220,20 +233,17 @@ function WalletStateController({ children }: { children: ReactNode }) {
       throw new Error("Wallet not connected");
     }
 
+    if (chainId !== liskSepolia.id) {
+      handleWalletError(new Error("wrong network"), { toast });
+      throw new Error("Wrong network");
+    }
+
     setIsTransacting(true);
 
     try {
+      // Convert VaultType to RiskLevel (0=Conservative, 1=Balanced, 2=Aggressive)
+      const { vaultTypeToRiskLevel } = await import("@/lib/utils");
       const riskLevel = vaultTypeToRiskLevel(vaultType);
-
-      // Note: Withdraw usually doesn't require allowance if it's burning shares, 
-      // but if Router transfersFrom Vault, it might. 
-      // Based on brief: "Approve Vault Shares: User harus approve Router"
-
-      // We should ideally check allowance here too, but for now let's assume UI handles approval flow
-      // or we can add it here if we know the Vault address easily.
-      // Since we don't have vault address passed in params easily (only type), 
-      // and fetching it async might be complex here, we'll rely on the contract call failing 
-      // or the UI handling the approval step (which VaultInteraction.tsx does).
 
       toast({
         title: "Queuing Withdrawal...",
@@ -241,7 +251,7 @@ function WalletStateController({ children }: { children: ReactNode }) {
       });
 
       const txHash = await writeContractAsync({
-        address: CONTRACTS.ROUTER as Address,
+        address: CONTRACTS.ROUTER,
         abi: ROUTER_ABI,
         functionName: "withdraw",
         args: [shares, riskLevel],
@@ -266,12 +276,15 @@ function WalletStateController({ children }: { children: ReactNode }) {
         ),
       });
 
-      queryClient.invalidateQueries({ queryKey: ["usePendingWithdraw"] });
+      // Invalidate relevant queries
+      queryClient.invalidateQueries({ queryKey: ["usePortfolioValue"] });
+      queryClient.invalidateQueries({ queryKey: ["useUserBalance"] });
+      queryClient.invalidateQueries({ queryKey: ["useTVL"] });
 
       return { txHash };
     } catch (error: any) {
       console.error("Withdraw error:", error);
-      handleWalletError(error, { toast });
+      handleTransactionError(error, { toast, action: "withdraw" });
       throw error;
     } finally {
       setIsTransacting(false);
@@ -281,7 +294,7 @@ function WalletStateController({ children }: { children: ReactNode }) {
   const approveToken = async (params: ApproveParams): Promise<{ txHash: string }> => {
     const { tokenAddress, spender, amount } = params;
 
-    if (!isConnected) {
+    if (!isConnected || !address) {
       handleWalletError(new Error("not-connected"), { toast });
       throw new Error("Wallet not connected");
     }
@@ -289,22 +302,32 @@ function WalletStateController({ children }: { children: ReactNode }) {
     setIsTransacting(true);
 
     try {
+      toast({
+        title: "Approving...",
+        description: `Please confirm the approval in your wallet`,
+      });
+
       const txHash = await writeContractAsync({
         address: tokenAddress,
-        abi: USDC_ABI, // ERC20 ABI
+        abi: USDC_ABI,
         functionName: "approve",
         args: [spender, amount],
       });
+
+      setLastTxHash(txHash);
 
       toast({
         title: "Approval Successful! ✅",
         description: "Token approval confirmed",
       });
 
+      // Invalidate allowance queries
+      queryClient.invalidateQueries({ queryKey: ["allowance"] });
+
       return { txHash };
     } catch (error: any) {
-      console.error("Approval error:", error);
-      handleWalletError(error, { toast });
+      console.error("Approve error:", error);
+      handleTransactionError(error, { toast, action: "approve" });
       throw error;
     } finally {
       setIsTransacting(false);
@@ -320,6 +343,11 @@ function WalletStateController({ children }: { children: ReactNode }) {
     setIsTransacting(true);
 
     try {
+      toast({
+        title: "Minting Test Tokens...",
+        description: `Please confirm the transaction in your wallet`,
+      });
+
       const txHash = await writeContractAsync({
         address: tokenAddress,
         abi: USDC_ABI,
@@ -327,15 +355,20 @@ function WalletStateController({ children }: { children: ReactNode }) {
         args: [address, amount],
       });
 
+      setLastTxHash(txHash);
+
       toast({
         title: "Tokens Minted! 🪙",
         description: "Test tokens have been added to your wallet",
       });
 
+      // Invalidate balance queries
+      queryClient.invalidateQueries({ queryKey: ["tokenBalance"] });
+
       return { txHash };
     } catch (error: any) {
       console.error("Mint error:", error);
-      handleWalletError(error, { toast });
+      handleTransactionError(error, { toast, action: "mint" });
       throw error;
     } finally {
       setIsTransacting(false);
@@ -370,21 +403,11 @@ interface Web3ProviderProps {
 export function Web3Provider({ children }: Web3ProviderProps) {
   const [mounted, setMounted] = useState(false);
   const [config, setConfig] = useState<Config | null>(null);
-  const [missingEnv, setMissingEnv] = useState<string[]>([]);
 
   useEffect(() => {
     // Only create config on client side
     const walletConnectProjectId = process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID || "";
     const xellarAppId = process.env.NEXT_PUBLIC_XELLAR_APP_ID || "";
-
-    const missing = [];
-    if (!walletConnectProjectId) missing.push("NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID");
-    if (!xellarAppId) missing.push("NEXT_PUBLIC_XELLAR_APP_ID");
-
-    if (missing.length > 0) {
-      setMissingEnv(missing);
-      return;
-    }
 
     const clientConfig = defaultConfig({
       appName: "Growish",
@@ -395,27 +418,16 @@ export function Web3Provider({ children }: Web3ProviderProps) {
     }) as Config;
 
     setConfig(clientConfig);
-    setTimeout(() => setMounted(true), 0);
   }, []);
 
-  if (missingEnv.length > 0) {
-    return (
-      <div className="flex h-screen w-screen items-center justify-center bg-black text-white">
-        <div className="max-w-md p-6 border border-red-500 rounded-lg bg-red-950/30">
-          <h2 className="text-xl font-bold text-red-500 mb-4">Missing Configuration</h2>
-          <p className="mb-4">
-            Please set the following environment variables in your <code className="bg-gray-800 px-1 py-0.5 rounded">.env</code> file:
-          </p>
-          <ul className="list-disc list-inside space-y-2 text-sm text-gray-300">
-            {missingEnv.map((env) => (
-              <li key={env}>{env}</li>
-            ))}
-          </ul>
-        </div>
-      </div>
-    );
-  }
+  // Separate useEffect for mounted state to prevent setState during render
+  useEffect(() => {
+    if (config) {
+      setMounted(true);
+    }
+  }, [config]);
 
+  // Don't render providers until we have config
   if (!config) {
     return null;
   }

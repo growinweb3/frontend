@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { VaultList } from "@/components/vault-list"
 import { VaultDetails } from "@/components/vault-details"
 import { PageLayout } from "@/components/page-layout"
@@ -8,11 +8,54 @@ import { FloatingNav } from "@/components/floating-nav"
 import { Card } from "@/components/ui/card"
 import { VaultType } from "@/lib/types"
 import { Shield, TrendingUp, Zap } from "lucide-react"
+import { useQueryClient } from "@tanstack/react-query"  // ADD THIS
+
 
 
 export default function Vaults() {
   const [selectedVault, setSelectedVault] = useState<VaultType | null>(null)
   const [filter, setFilter] = useState<VaultType | "all">("all")
+  const queryClient = useQueryClient()
+
+  useEffect(() => {
+    // Log all queries in the cache to diagnose caching issues
+    console.group('🗄️ [React Query Cache Diagnostic]')
+    console.log('Total queries in cache:', queryClient.getQueryCache().getAll().length)
+    
+    const allQueries = queryClient.getQueryCache().getAll()
+    
+    // Custom JSON.stringify replacer to handle BigInt
+    const bigIntReplacer = (_key: string, value: any) => {
+      if (typeof value === 'bigint') {
+        return value.toString() + 'n'
+      }
+      return value
+    }
+    
+    const groupedByKey = allQueries.reduce((acc, query) => {
+      const key = JSON.stringify(query.queryKey, bigIntReplacer)
+      if (!acc[key]) {
+        acc[key] = []
+      }
+      acc[key].push({
+        state: query.state.status,
+        dataPreview: typeof query.state.data === 'bigint' 
+          ? query.state.data.toString() + 'n'
+          : query.state.data,
+        dataUpdatedAt: new Date(query.state.dataUpdatedAt).toLocaleTimeString()
+      })
+      return acc
+    }, {} as Record<string, any[]>)
+    
+    console.log('Queries grouped by key:', groupedByKey)
+    console.log('🔍 Duplicate keys (SHOULD BE EMPTY):', 
+      Object.entries(groupedByKey)
+        .filter(([_, queries]) => queries.length > 1)
+        .map(([key, queries]) => ({ key, count: queries.length, queries }))
+    )
+    console.groupEnd()
+  }, [queryClient])
+
 
   return (
     <>

@@ -129,8 +129,10 @@ export function useTotalPendingDeposits(vaultType?: string) {
     abi: ROUTER_ABI,
     functionName: 'totalPendingDeposits',
     args: [riskLevel],
+    scopeKey: vaultType,
     query: {
       enabled: !!vaultType,
+      refetchInterval: 10_000,
     },
   })
 }
@@ -143,8 +145,10 @@ export function useTotalPendingWithdraws(vaultType?: string) {
     abi: ROUTER_ABI,
     functionName: 'totalPendingWithdraws',
     args: [riskLevel],
+    scopeKey: vaultType,
     query: {
       enabled: !!vaultType,
+      refetchInterval: 10_000,
     },
   })
 }
@@ -166,12 +170,23 @@ export function useUSDCAddress() {
 
 export function useVaultAddress(vaultType?: string) {
   // Map vaultType to hardcoded addresses from CONTRACTS
-  // This avoids an async call to Router.vaults(riskLevel) but is safer if config is static
+  // Handle both string literals and VaultType enum values
   let address: `0x${string}` | undefined
+  
+  // Normalize to lowercase for comparison to handle both enum and string
+  const normalizedType = vaultType?.toLowerCase()
+  
+  if (normalizedType === 'conservative') address = CONTRACTS.VAULT_CONSERVATIVE as `0x${string}`
+  else if (normalizedType === 'balanced') address = CONTRACTS.VAULT_BALANCED as `0x${string}`
+  else if (normalizedType === 'aggressive') address = CONTRACTS.VAULT_AGGRESSIVE as `0x${string}`
 
-  if (vaultType === 'conservative') address = CONTRACTS.VAULT_CONSERVATIVE as `0x${string}`
-  else if (vaultType === 'balanced') address = CONTRACTS.VAULT_BALANCED as `0x${string}`
-  else if (vaultType === 'aggressive') address = CONTRACTS.VAULT_AGGRESSIVE as `0x${string}`
+  // Debug logging
+  console.log('[useVaultAddress]', {
+    input: vaultType,
+    normalized: normalizedType,
+    output: address,
+    typeOf: typeof vaultType
+  })
 
   return {
     data: address,
@@ -181,49 +196,56 @@ export function useVaultAddress(vaultType?: string) {
 }
 
 // Get user's share balance in the vault
-export function useUserVaultShares(userAddress?: `0x${string}`, vaultAddress?: `0x${string}`) {
+export function useUserVaultShares(userAddress?: `0x${string}`, vaultAddress?: `0x${string}`, vaultType?: string) {
   return useReadContract({
     address: vaultAddress,
     abi: VAULT_ABI,
     functionName: 'balanceOf',
     args: userAddress ? [userAddress] : undefined,
+    scopeKey: `userVaultShares-${vaultType || vaultAddress}`,
     query: {
       enabled: !!userAddress && !!vaultAddress,
+      refetchInterval: 10_000,
     },
   })
 }
 
 // Get Vault Total Assets (TVL)
-export function useVaultTotalAssets(vaultAddress?: `0x${string}`) {
+export function useVaultTotalAssets(vaultAddress?: `0x${string}`, vaultType?: string) {
   return useReadContract({
     address: vaultAddress,
     abi: VAULT_ABI,
     functionName: 'totalAssets',
+    scopeKey: `vaultTotalAssets-${vaultType || vaultAddress}`,
     query: {
       enabled: !!vaultAddress,
+      refetchInterval: 10_000,
     },
   })
 }
 
 // Get Vault Share Price
-export function useVaultSharePrice(vaultAddress?: `0x${string}`) {
+export function useVaultSharePrice(vaultAddress?: `0x${string}`, vaultType?: string) {
   return useReadContract({
     address: vaultAddress,
     abi: VAULT_ABI,
     functionName: 'sharePrice',
+    scopeKey: `vaultSharePrice-${vaultType || vaultAddress}`,
     query: {
       enabled: !!vaultAddress,
+      refetchInterval: 10_000,
     },
   })
 }
 
 // Get Strategy Address from Vault (assuming index 0 for MVP)
-export function useStrategyAddress(vaultAddress?: `0x${string}`) {
+export function useStrategyAddress(vaultAddress?: `0x${string}`, vaultType?: string) {
   return useReadContract({
     address: vaultAddress,
     abi: VAULT_ABI,
     functionName: 'strategies',
     args: [BigInt(0)],
+    scopeKey: `strategyAddress-${vaultType || vaultAddress}`,
     query: {
       enabled: !!vaultAddress,
       staleTime: Infinity,
@@ -232,13 +254,15 @@ export function useStrategyAddress(vaultAddress?: `0x${string}`) {
 }
 
 // Get APY from Strategy
-export function useStrategyAPY(strategyAddress?: `0x${string}`) {
+export function useStrategyAPY(strategyAddress?: `0x${string}`, vaultType?: string) {
   return useReadContract({
     address: strategyAddress,
     abi: STRATEGY_ABI,
     functionName: 'getAPY',
+    scopeKey: `strategyAPY-${vaultType || strategyAddress}`,
     query: {
       enabled: !!strategyAddress,
+      refetchInterval: 10_000,
     },
   })
 }
@@ -246,8 +270,8 @@ export function useStrategyAPY(strategyAddress?: `0x${string}`) {
 // Helper to get APY for a vault type (chains calls: Vault -> Strategy -> APY)
 export function useVaultAPY(vaultType?: string) {
   const { data: vaultAddress } = useVaultAddress(vaultType)
-  const { data: strategyAddress } = useStrategyAddress(vaultAddress)
-  return useStrategyAPY(strategyAddress)
+  const { data: strategyAddress } = useStrategyAddress(vaultAddress, vaultType)
+  return useStrategyAPY(strategyAddress, vaultType)
 }
 
 // Hook to calculate Weighted APY based on assets in each strategy
@@ -255,57 +279,147 @@ export function useVaultWeightedAPY(vaultType?: string) {
   const { data: vaultAddress } = useVaultAddress(vaultType)
 
   // 1. Get Vault Total Assets
-  const { data: totalAssets } = useVaultTotalAssets(vaultAddress)
+  const { data: totalAssets } = useVaultTotalAssets(vaultAddress, vaultType)
 
-  // 2. Get Strategies (we assume max 2 for now as per other hooks)
-  const { data: strategyAddresses } = useReadContracts({
-    contracts: [
-      { address: vaultAddress, abi: VAULT_ABI, functionName: 'strategies', args: [BigInt(0)] },
-      { address: vaultAddress, abi: VAULT_ABI, functionName: 'strategies', args: [BigInt(1)] },
-    ],
-    query: { enabled: !!vaultAddress }
+  // 2. Get Strategy Addresses - use individual calls with proper scopeKey
+  const { data: strat0Addr } = useReadContract({
+    address: vaultAddress,
+    abi: VAULT_ABI,
+    functionName: 'strategies',
+    args: [BigInt(0)],
+    scopeKey: `strategy0-${vaultType || vaultAddress}`,
+    query: {
+      enabled: !!vaultAddress
+    }
+  })
+  
+  console.log(`[Strategy0 Hook] ${vaultType}:`, {
+    scopeKey: `strategy0-${vaultType || vaultAddress}`,
+    vaultAddress,
+    result: strat0Addr
   })
 
-  const strat0Addr = strategyAddresses?.[0]?.result as `0x${string}` | undefined
-  const strat1Addr = strategyAddresses?.[1]?.result as `0x${string}` | undefined
-
-  // 3. Get Strategy Data (Balance + APY)
-  const { data: stratData } = useReadContracts({
-    contracts: [
-      { address: strat0Addr, abi: STRATEGY_ABI, functionName: 'balanceOf' },
-      { address: strat0Addr, abi: STRATEGY_ABI, functionName: 'getAPY' },
-      { address: strat1Addr, abi: STRATEGY_ABI, functionName: 'balanceOf' },
-      { address: strat1Addr, abi: STRATEGY_ABI, functionName: 'getAPY' },
-    ],
+  const { data: strat1Addr } = useReadContract({
+    address: vaultAddress,
+    abi: VAULT_ABI,
+    functionName: 'strategies',
+    args: [BigInt(1)],
+    scopeKey: `strategy1-${vaultType || vaultAddress}`,
     query: {
-      enabled: !!strat0Addr || !!strat1Addr,
+      enabled: !!vaultAddress
+    }
+  })
+  
+  console.log(`[Strategy1 Hook] ${vaultType}:`, {
+    scopeKey: `strategy1-${vaultType || vaultAddress}`,
+    vaultAddress,
+    result: strat1Addr
+  })
+
+  // 3. Get Strategy 0 Data - Include both vaultType AND vaultAddress for unique keys
+  const { data: strat0Balance } = useReadContract({
+    address: strat0Addr as `0x${string}` | undefined,
+    abi: STRATEGY_ABI,
+    functionName: 'balanceOf',
+    scopeKey: `strat0Balance-${vaultType}-${vaultAddress}`,
+    query: {
+      enabled: !!strat0Addr && !!vaultAddress,
       refetchInterval: 10_000
     }
   })
 
-  // 4. Calculate Weighted APY
+  const { data: strat0APY } = useReadContract({
+    address: strat0Addr as `0x${string}` | undefined,
+    abi: STRATEGY_ABI,
+    functionName: 'getAPY',
+    scopeKey: `strat0APY-${vaultType}-${vaultAddress}`,
+    query: {
+      enabled: !!strat0Addr && !!vaultAddress,
+      refetchInterval: 10_000
+    }
+  })
+
+  // 4. Get Strategy 1 Data - Include both vaultType AND vaultAddress for unique keys
+  const { data: strat1Balance } = useReadContract({
+    address: strat1Addr as `0x${string}` | undefined,
+    abi: STRATEGY_ABI,
+    functionName: 'balanceOf',
+    scopeKey: `strat1Balance-${vaultType}-${vaultAddress}`,
+    query: {
+      enabled: !!strat1Addr && !!vaultAddress,
+      refetchInterval: 10_000
+    }
+  })
+
+  const { data: strat1APY } = useReadContract({
+    address: strat1Addr as `0x${string}` | undefined,
+    abi: STRATEGY_ABI,
+    functionName: 'getAPY',
+    scopeKey: `strat1APY-${vaultType}-${vaultAddress}`,
+    query: {
+      enabled: !!strat1Addr && !!vaultAddress,
+      refetchInterval: 10_000
+    }
+  })
+
+  // 5. Calculate Weighted APY
   if (!totalAssets || totalAssets === BigInt(0)) return { data: BigInt(0), isLoading: false }
+
+  // DEBUG LOGGING - Enhanced diagnostics
+  console.group(`🔍 [useVaultWeightedAPY] ${vaultType}`)
+  console.log('📍 Vault Info:', {
+    vaultType,
+    vaultAddress,
+    expectedAddress: vaultType?.toLowerCase() === 'conservative' ? '0x6E69Ed7A9b7F4b1De965328738b3d7Bb757Ea94c' :
+                     vaultType?.toLowerCase() === 'balanced' ? '0x21AF332B10481972B903cBd6C3f1ec51546552e7' :
+                     vaultType?.toLowerCase() === 'aggressive' ? '0xc4E50772bd6d27661EE12d81e62Daa4882F4E6f4' : 'unknown',
+    addressMatch: vaultAddress === (
+      vaultType?.toLowerCase() === 'conservative' ? '0x6E69Ed7A9b7F4b1De965328738b3d7Bb757Ea94c' :
+      vaultType?.toLowerCase() === 'balanced' ? '0x21AF332B10481972B903cBd6C3f1ec51546552e7' :
+      vaultType?.toLowerCase() === 'aggressive' ? '0xc4E50772bd6d27661EE12d81e62Daa4882F4E6f4' : 'unknown'
+    )
+  })
+  console.log('🎯 Strategy Addresses:', {
+    strat0Addr,
+    strat1Addr,
+    scopeKeys: {
+      strat0: `strategy0-${vaultType || vaultAddress}`,
+      strat1: `strategy1-${vaultType || vaultAddress}`
+    }
+  })
+  console.log('💰 Strategy Data:', {
+    strat0Balance: strat0Balance?.toString(),
+    strat0APY: strat0APY?.toString(),
+    strat1Balance: strat1Balance?.toString(),
+    strat1APY: strat1APY?.toString(),
+    totalAssets: totalAssets?.toString()
+  })
+  console.log('🔑 ScopeKeys Used:', {
+    strategy0: `strategy0-${vaultType || vaultAddress}`,
+    strategy1: `strategy1-${vaultType || vaultAddress}`,
+    strat0Balance: `strat0Balance-${vaultType}-${vaultAddress}`,
+    strat0APY: `strat0APY-${vaultType}-${vaultAddress}`,
+    strat1Balance: `strat1Balance-${vaultType}-${vaultAddress}`,
+    strat1APY: `strat1APY-${vaultType}-${vaultAddress}`
+  })
+  console.groupEnd()
 
   let totalWeightedScore = BigInt(0)
 
   // Strategy 0
-  if (strat0Addr && stratData?.[0]?.status === 'success' && stratData?.[1]?.status === 'success') {
-    const balance = stratData[0].result as bigint
-    const apy = stratData[1].result as bigint // Basis Points
-    totalWeightedScore += balance * apy
+  if (strat0Balance && strat0APY) {
+    totalWeightedScore += (strat0Balance as bigint) * (strat0APY as bigint)
   }
 
   // Strategy 1
-  if (strat1Addr && stratData?.[2]?.status === 'success' && stratData?.[3]?.status === 'success') {
-    const balance = stratData[2].result as bigint
-    const apy = stratData[3].result as bigint // Basis Points
-    totalWeightedScore += balance * apy
+  if (strat1Balance && strat1APY) {
+    totalWeightedScore += (strat1Balance as bigint) * (strat1APY as bigint)
   }
 
   // Idle assets (assume 0% APY)
   // No need to add to score since APY is 0
 
-  const weightedAPY_BPS = totalWeightedScore / totalAssets
+  const weightedAPY_BPS = totalAssets > BigInt(0) ? totalWeightedScore / totalAssets : BigInt(0)
 
   // Convert BPS to 1e18 scale for frontend compatibility
   // 1 BPS = 0.01% = 0.0001
@@ -555,6 +669,7 @@ export function useVaultStrategyDistribution(vaultAddress?: `0x${string}`) {
         args: [BigInt(1)],
       },
     ],
+    scopeKey: `distribution-${vaultAddress}`,
     query: {
       enabled: !!vaultAddress,
       refetchInterval: 10_000,
@@ -589,6 +704,7 @@ export function useVaultStrategyDistribution(vaultAddress?: `0x${string}`) {
         functionName: 'protocol',
       },
     ],
+    scopeKey: `strategies-${vaultAddress}`,
     query: {
       enabled: !!strategy0Address || !!strategy1Address,
       refetchInterval: 10_000,

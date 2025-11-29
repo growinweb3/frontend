@@ -226,6 +226,7 @@ export function VaultDetails({ vaultType, onClose }: VaultDetailsProps) {
                       protocol={item.protocol}
                       allocation={item.allocation}
                       strategyAddress={strategy?.address as `0x${string}` | undefined}
+                      vaultType={vaultType}
                     />
                   )
                 })}
@@ -269,13 +270,15 @@ export function VaultDetails({ vaultType, onClose }: VaultDetailsProps) {
 function ProtocolRow({
   protocol,
   allocation,
-  strategyAddress
+  strategyAddress,
+  vaultType
 }: {
   protocol: any,
   allocation: number,
-  strategyAddress?: `0x${string}`
+  strategyAddress?: `0x${string}`,
+  vaultType?: string
 }) {
-  const { data: apy } = useStrategyAPY(strategyAddress)
+  const { data: apy } = useStrategyAPY(strategyAddress, vaultType)
 
   // Format APY: 500 BPS -> 5.00%
   const formattedAPY = apy !== undefined
