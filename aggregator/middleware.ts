@@ -36,9 +36,21 @@ export function middleware(request: NextRequest) {
       appUrl.hostname = `app.${hostname}`
       return NextResponse.redirect(appUrl)
     } else {
+      // Compute root domain safely
+      let rootDomain;
+
+      if (hostname.endsWith('.vercel.app')) {
+        // Vercel preview: keep whole hostname (no rewriting)
+        rootDomain = hostname; 
+      } else {
+        // Real production domains
+        rootDomain = hostname.split('.').slice(-2).join('.');
+      }
+      
       // In production, redirect to app subdomain
-      const rootDomain = hostname.split('.').slice(-2).join('.') // Get domain.com from www.domain.com
-      appUrl.hostname = `app.${rootDomain}`
+      appUrl.hostname = hostname.endsWith('.vercel.app')
+        ? `app.${hostname}`           // app.frontend-chi-five-87.vercel.app
+        : `app.${rootDomain}`         // app.domain.com
       return NextResponse.redirect(appUrl)
     }
   }
