@@ -172,10 +172,10 @@ export function useVaultAddress(vaultType?: string) {
   // Map vaultType to hardcoded addresses from CONTRACTS
   // Handle both string literals and VaultType enum values
   let address: `0x${string}` | undefined
-  
+
   // Normalize to lowercase for comparison to handle both enum and string
   const normalizedType = vaultType?.toLowerCase()
-  
+
   if (normalizedType === 'conservative') address = CONTRACTS.VAULT_CONSERVATIVE as `0x${string}`
   else if (normalizedType === 'balanced') address = CONTRACTS.VAULT_BALANCED as `0x${string}`
   else if (normalizedType === 'aggressive') address = CONTRACTS.VAULT_AGGRESSIVE as `0x${string}`
@@ -292,7 +292,7 @@ export function useVaultWeightedAPY(vaultType?: string) {
       enabled: !!vaultAddress
     }
   })
-  
+
   console.log(`[Strategy0 Hook] ${vaultType}:`, {
     scopeKey: `strategy0-${vaultType || vaultAddress}`,
     vaultAddress,
@@ -309,7 +309,7 @@ export function useVaultWeightedAPY(vaultType?: string) {
       enabled: !!vaultAddress
     }
   })
-  
+
   console.log(`[Strategy1 Hook] ${vaultType}:`, {
     scopeKey: `strategy1-${vaultType || vaultAddress}`,
     vaultAddress,
@@ -371,12 +371,12 @@ export function useVaultWeightedAPY(vaultType?: string) {
     vaultType,
     vaultAddress,
     expectedAddress: vaultType?.toLowerCase() === 'conservative' ? '0x6E69Ed7A9b7F4b1De965328738b3d7Bb757Ea94c' :
-                     vaultType?.toLowerCase() === 'balanced' ? '0x21AF332B10481972B903cBd6C3f1ec51546552e7' :
-                     vaultType?.toLowerCase() === 'aggressive' ? '0xc4E50772bd6d27661EE12d81e62Daa4882F4E6f4' : 'unknown',
+      vaultType?.toLowerCase() === 'balanced' ? '0x21AF332B10481972B903cBd6C3f1ec51546552e7' :
+        vaultType?.toLowerCase() === 'aggressive' ? '0xc4E50772bd6d27661EE12d81e62Daa4882F4E6f4' : 'unknown',
     addressMatch: vaultAddress === (
       vaultType?.toLowerCase() === 'conservative' ? '0x6E69Ed7A9b7F4b1De965328738b3d7Bb757Ea94c' :
-      vaultType?.toLowerCase() === 'balanced' ? '0x21AF332B10481972B903cBd6C3f1ec51546552e7' :
-      vaultType?.toLowerCase() === 'aggressive' ? '0xc4E50772bd6d27661EE12d81e62Daa4882F4E6f4' : 'unknown'
+        vaultType?.toLowerCase() === 'balanced' ? '0x21AF332B10481972B903cBd6C3f1ec51546552e7' :
+          vaultType?.toLowerCase() === 'aggressive' ? '0xc4E50772bd6d27661EE12d81e62Daa4882F4E6f4' : 'unknown'
     )
   })
   console.log('🎯 Strategy Addresses:', {

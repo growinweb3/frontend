@@ -22,6 +22,8 @@ interface VaultDetailsProps {
   onClose: () => void
 }
 
+type Tab = 'deposit' | 'withdraw'
+
 export function VaultDetails({ vaultType, onClose }: VaultDetailsProps) {
   const config = VAULT_CONFIGS[vaultType]
   const aaveInfo = PROTOCOLS[Protocol.AAVE_V3]
@@ -48,6 +50,11 @@ export function VaultDetails({ vaultType, onClose }: VaultDetailsProps) {
   const { data: vaultShareAllowance, refetch: refetchVaultAllowance } = useTokenAllowance(vaultAddress, address)
   const { data: minDepositAmount } = useMinDepositAmount()
 
+  // Fetch Vault Share Data
+  const { data: shareBalance } = useUserVaultShares(address, vaultAddress, vaultType)
+  const { data: sharePrice } = useVaultSharePrice(vaultAddress, vaultType)
+  const { data: vaultAllowance, refetch: refetchVaultAllowance } = useTokenAllowance(vaultAddress, address) // Vault shares are ERC20
+
   // Calculate protocol breakdown based on vault allocation strategy
   const protocolBreakdown = [
     {
@@ -65,19 +72,19 @@ export function VaultDetails({ vaultType, onClose }: VaultDetailsProps) {
   // Deposit Logic
   const handleMaxDeposit = () => {
     if (tokenBalance) {
-      setDepositAmount(formatUnits(tokenBalance, assetDecimals))
+      setAmount(formatUnits(tokenBalance, assetDecimals))
     }
   }
 
   const handleSmartDeposit = async () => {
-    if (!depositAmount || !address) return
+    if (!amount || !address) return
 
     try {
-      const amount = parseUnits(depositAmount, assetDecimals)
+      const depositAmount = parseUnits(amount, assetDecimals)
       const currentAllowance = allowance || BigInt(0)
 
       // 1. Check if approval is needed
-      if (amount > currentAllowance) {
+      if (depositAmount > currentAllowance) {
         await approveToken({
           tokenAddress: assetAddress,
           spender: CONTRACTS.ROUTER as `0x${string}`,
@@ -90,7 +97,7 @@ export function VaultDetails({ vaultType, onClose }: VaultDetailsProps) {
       // 2. Proceed with Deposit
       await deposit({
         vaultType,
-        amount,
+        amount: depositAmount,
         assetSymbol: "USDC"
       })
 
