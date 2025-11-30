@@ -1,7 +1,7 @@
 import { useState } from "react"
 import { VaultType, Protocol } from "@/lib/types"
 import { VAULT_CONFIGS, PROTOCOLS } from "@/lib/constants"
-import { X, TrendingUp, AlertCircle, Clock, RefreshCw, ArrowRight, Loader2 } from "lucide-react"
+import { X, TrendingUp, AlertCircle, Clock, RefreshCw, ArrowRight, Loader2, ArrowUpRight, ArrowDownLeft } from "lucide-react"
 import { BatchCountdown } from "./batch-countdown"
 import {
   useVaultAddress,
@@ -10,7 +10,8 @@ import {
   useTokenBalance,
   useTokenAllowance,
   useMinDepositAmount,
-  useFormatTokenAmount
+  useFormatTokenAmount,
+  useUserVaultShares
 } from "@/hooks/useContracts"
 import { useWallet } from "@/components/Web3Provider"
 import { CONTRACTS } from "@/lib/contracts"
@@ -27,7 +28,9 @@ export function VaultDetails({ vaultType, onClose }: VaultDetailsProps) {
   const compoundInfo = PROTOCOLS[Protocol.COMPOUND_V3]
 
   const [depositAmount, setDepositAmount] = useState("")
-  const { address, deposit, approveToken, isTransacting } = useWallet()
+  const [withdrawAmount, setWithdrawAmount] = useState("")
+  const [activeTab, setActiveTab] = useState<'deposit' | 'withdraw'>('deposit')
+  const { address, deposit, withdraw, approveToken, isTransacting } = useWallet()
   const { formatAmount } = useFormatTokenAmount()
 
   // Fetch Vault Address
@@ -41,6 +44,8 @@ export function VaultDetails({ vaultType, onClose }: VaultDetailsProps) {
   const assetDecimals = 6
   const { data: tokenBalance } = useTokenBalance(assetAddress, address)
   const { data: allowance, refetch: refetchAllowance } = useTokenAllowance(assetAddress, address)
+  const { data: vaultBalance } = useUserVaultShares(address, vaultAddress, vaultType)
+  const { data: vaultShareAllowance, refetch: refetchVaultAllowance } = useTokenAllowance(vaultAddress, address)
   const { data: minDepositAmount } = useMinDepositAmount()
 
   // Calculate protocol breakdown based on vault allocation strategy
@@ -76,9 +81,8 @@ export function VaultDetails({ vaultType, onClose }: VaultDetailsProps) {
         await approveToken({
           tokenAddress: assetAddress,
           spender: CONTRACTS.ROUTER as `0x${string}`,
-          amount: amount, // Approve exact amount
+          amount: amount,
         })
-        // Wait a bit for indexing (optional but good for UX)
         await new Promise(resolve => setTimeout(resolve, 2000))
         await refetchAllowance()
       }
@@ -90,28 +94,78 @@ export function VaultDetails({ vaultType, onClose }: VaultDetailsProps) {
         assetSymbol: "USDC"
       })
 
-      // Clear input on success
       setDepositAmount("")
-
     } catch (error) {
       console.error("Smart deposit failed:", error)
     }
   }
 
-  // Validation
-  const amount = depositAmount ? parseUnits(depositAmount, assetDecimals) : BigInt(0)
-  const hasBalance = tokenBalance ? tokenBalance >= amount : false
-  const isMinMet = minDepositAmount ? amount >= minDepositAmount : true
-  const isValid = depositAmount && parseFloat(depositAmount) > 0 && hasBalance && isMinMet
-  const needsApproval = allowance ? amount > allowance : true
+  // Withdraw Logic
+  const handleMaxWithdraw = () => {
+    if (vaultBalance) {
+      setWithdrawAmount(formatUnits(vaultBalance, assetDecimals))
+    }
+  }
 
-  const getButtonText = () => {
+  const handleSmartWithdraw = async () => {
+    if (!withdrawAmount || !address) return
+
+    try {
+      const shares = parseUnits(withdrawAmount, assetDecimals)
+      const currentVaultAllowance = vaultShareAllowance || BigInt(0)
+
+      // 1. Check if vault share approval is needed
+      if (shares > currentVaultAllowance) {
+        await approveToken({
+          tokenAddress: vaultAddress!,
+          spender: CONTRACTS.ROUTER as `0x${string}`,
+          amount: shares,
+        })
+        await new Promise(resolve => setTimeout(resolve, 2000))
+        await refetchVaultAllowance()
+      }
+
+      // 2. Proceed with Withdrawal
+      await withdraw({
+        vaultType,
+        shares,
+        assetSymbol: "USDC"
+      })
+
+      setWithdrawAmount("")
+    } catch (error) {
+      console.error("Smart withdraw failed:", error)
+    }
+  }
+
+  // Deposit Validation
+  const depositAmountBigInt = depositAmount ? parseUnits(depositAmount, assetDecimals) : BigInt(0)
+  const hasBalance = tokenBalance ? tokenBalance >= depositAmountBigInt : false
+  const isMinMet = minDepositAmount ? depositAmountBigInt >= minDepositAmount : true
+  const isDepositValid = depositAmount && parseFloat(depositAmount) > 0 && hasBalance && isMinMet
+  const needsDepositApproval = allowance ? depositAmountBigInt > allowance : true
+
+  // Withdraw Validation
+  const withdrawAmountBigInt = withdrawAmount ? parseUnits(withdrawAmount, assetDecimals) : BigInt(0)
+  const hasShares = vaultBalance ? vaultBalance >= withdrawAmountBigInt : false
+  const isWithdrawValid = withdrawAmount && parseFloat(withdrawAmount) > 0 && hasShares
+  const needsWithdrawApproval = vaultShareAllowance ? withdrawAmountBigInt > vaultShareAllowance : true
+
+  const getDepositButtonText = () => {
     if (isTransacting) return "Processing..."
     if (!depositAmount) return "Enter Amount"
     if (!hasBalance) return "Insufficient Balance"
     if (!isMinMet) return `Min Deposit ${formatUnits(minDepositAmount || BigInt(0), assetDecimals)} USDC`
-    if (needsApproval) return "Approve & Deposit USDC"
+    if (needsDepositApproval) return "Approve & Deposit USDC"
     return "Deposit USDC"
+  }
+
+  const getWithdrawButtonText = () => {
+    if (isTransacting) return "Processing..."
+    if (!withdrawAmount) return "Enter Amount"
+    if (!hasShares) return "Insufficient Shares"
+    if (needsWithdrawApproval) return "Approve & Withdraw"
+    return "Withdraw"
   }
 
   return (
@@ -162,49 +216,127 @@ export function VaultDetails({ vaultType, onClose }: VaultDetailsProps) {
               </div>
             </div>
 
-            {/* Deposit Section */}
-            <div className="pt-4 space-y-3">
-              <div className="flex justify-between text-sm text-white/60">
-                <span>Deposit Amount</span>
-                <span>Balance: {formatAmount(tokenBalance, assetDecimals)} USDC</span>
-              </div>
-
-              <div className="relative">
-                <input
-                  type="number"
-                  value={depositAmount}
-                  onChange={(e) => setDepositAmount(e.target.value)}
-                  placeholder="0.00"
-                  className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-4 pr-20 text-white placeholder:text-white/30 focus:outline-none focus:border-emerald-500/50 transition-colors"
-                />
+            {/* Tabs for Deposit/Withdraw */}
+            <div className="space-y-4">
+              {/* Tab Buttons */}
+              <div className="flex gap-2 p-1 rounded-xl bg-white/5">
                 <button
-                  onClick={handleMaxDeposit}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 px-3 py-1 text-xs font-medium text-emerald-400 hover:bg-emerald-400/10 rounded-lg transition-colors"
+                  onClick={() => setActiveTab('deposit')}
+                  className={`flex-1 py-2 px-4 rounded-lg font-medium transition-all flex items-center justify-center gap-2 ${
+                    activeTab === 'deposit'
+                      ? 'bg-emerald-500/20 text-emerald-400'
+                      : 'text-white/60 hover:text-white/80'
+                  }`}
                 >
-                  MAX
+                  <ArrowUpRight className="w-4 h-4" />
+                  Deposit
+                </button>
+                <button
+                  onClick={() => setActiveTab('withdraw')}
+                  className={`flex-1 py-2 px-4 rounded-lg font-medium transition-all flex items-center justify-center gap-2 ${
+                    activeTab === 'withdraw'
+                      ? 'bg-blue-500/20 text-blue-400'
+                      : 'text-white/60 hover:text-white/80'
+                  }`}
+                >
+                  <ArrowDownLeft className="w-4 h-4" />
+                  Withdraw
                 </button>
               </div>
 
-              <div className="flex gap-3 pt-2">
-                <button
-                  onClick={handleSmartDeposit}
-                  disabled={!isValid || isTransacting}
-                  className={`flex-1 py-3 rounded-xl font-medium transition-all duration-300 flex items-center justify-center gap-2
-                    ${!isValid || isTransacting
-                      ? 'bg-white/10 text-white/40 cursor-not-allowed'
-                      : 'bg-gradient-to-r from-emerald-500 to-cyan-500 text-white hover:shadow-lg hover:shadow-emerald-500/20'
-                    }`}
-                >
-                  {isTransacting && <Loader2 className="w-4 h-4 animate-spin" />}
-                  {getButtonText()}
-                </button>
-                <button
-                  className="px-6 py-3 rounded-xl border border-white/10 text-white/70 font-medium hover:bg-white/5 transition-all duration-300"
-                  onClick={onClose}
-                >
-                  Cancel
-                </button>
-              </div>
+              {/* Deposit Tab Content */}
+              {activeTab === 'deposit' && (
+                <div className="space-y-3">
+                  <div className="flex justify-between text-sm text-white/60">
+                    <span>Deposit Amount</span>
+                    <span>Balance: {formatAmount(tokenBalance, assetDecimals)} USDC</span>
+                  </div>
+
+                  <div className="relative">
+                    <input
+                      type="number"
+                      value={depositAmount}
+                      onChange={(e) => setDepositAmount(e.target.value)}
+                      placeholder="0.00"
+                      className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-4 pr-20 text-white placeholder:text-white/30 focus:outline-none focus:border-emerald-500/50 transition-colors"
+                    />
+                    <button
+                      onClick={handleMaxDeposit}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 px-3 py-1 text-xs font-medium text-emerald-400 hover:bg-emerald-400/10 rounded-lg transition-colors"
+                    >
+                      MAX
+                    </button>
+                  </div>
+
+                  <div className="flex gap-3 pt-2">
+                    <button
+                      onClick={handleSmartDeposit}
+                      disabled={!isDepositValid || isTransacting}
+                      className={`flex-1 py-3 rounded-xl font-medium transition-all duration-300 flex items-center justify-center gap-2
+                        ${!isDepositValid || isTransacting
+                          ? 'bg-white/10 text-white/40 cursor-not-allowed'
+                          : 'bg-gradient-to-r from-emerald-500 to-cyan-500 text-white hover:shadow-lg hover:shadow-emerald-500/20'
+                        }`}
+                    >
+                      {isTransacting && <Loader2 className="w-4 h-4 animate-spin" />}
+                      {getDepositButtonText()}
+                    </button>
+                    <button
+                      className="px-6 py-3 rounded-xl border border-white/10 text-white/70 font-medium hover:bg-white/5 transition-all duration-300"
+                      onClick={onClose}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Withdraw Tab Content */}
+              {activeTab === 'withdraw' && (
+                <div className="space-y-3">
+                  <div className="flex justify-between text-sm text-white/60">
+                    <span>Withdraw Amount</span>
+                    <span>Shares: {formatAmount(vaultBalance, assetDecimals)}</span>
+                  </div>
+
+                  <div className="relative">
+                    <input
+                      type="number"
+                      value={withdrawAmount}
+                      onChange={(e) => setWithdrawAmount(e.target.value)}
+                      placeholder="0.00"
+                      className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-4 pr-20 text-white placeholder:text-white/30 focus:outline-none focus:border-blue-500/50 transition-colors"
+                    />
+                    <button
+                      onClick={handleMaxWithdraw}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 px-3 py-1 text-xs font-medium text-blue-400 hover:bg-blue-400/10 rounded-lg transition-colors"
+                    >
+                      MAX
+                    </button>
+                  </div>
+
+                  <div className="flex gap-3 pt-2">
+                    <button
+                      onClick={handleSmartWithdraw}
+                      disabled={!isWithdrawValid || isTransacting}
+                      className={`flex-1 py-3 rounded-xl font-medium transition-all duration-300 flex items-center justify-center gap-2
+                        ${!isWithdrawValid || isTransacting
+                          ? 'bg-white/10 text-white/40 cursor-not-allowed'
+                          : 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white hover:shadow-lg hover:shadow-blue-500/20'
+                        }`}
+                    >
+                      {isTransacting && <Loader2 className="w-4 h-4 animate-spin" />}
+                      {getWithdrawButtonText()}
+                    </button>
+                    <button
+                      className="px-6 py-3 rounded-xl border border-white/10 text-white/70 font-medium hover:bg-white/5 transition-all duration-300"
+                      onClick={onClose}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
