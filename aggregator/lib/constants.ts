@@ -62,7 +62,7 @@ export const VAULT_CONFIGS: Record<VaultType, VaultConfig> = {
       compound: 20,
     },
     rebalanceThreshold: 6, // Protocol rebalancing threshold
-    batchScheduleHours: 6, // Batch deposits every 6 hours to reduce gas fees
+    batchScheduleHours: 1, // Batch deposits every 1 hour to reduce gas fees
   },
   [VaultType.BALANCED]: {
     type: VaultType.BALANCED,
@@ -79,7 +79,7 @@ export const VAULT_CONFIGS: Record<VaultType, VaultConfig> = {
       compound: 50,
     },
     rebalanceThreshold: 4, // Protocol rebalancing threshold
-    batchScheduleHours: 6, // Batch deposits every 6 hours to reduce gas fees
+    batchScheduleHours: 1, // Batch deposits every 1 hour to reduce gas fees
   },
   [VaultType.AGGRESSIVE]: {
     type: VaultType.AGGRESSIVE,
@@ -96,7 +96,7 @@ export const VAULT_CONFIGS: Record<VaultType, VaultConfig> = {
       compound: 70,
     },
     rebalanceThreshold: 2, // Protocol rebalancing threshold
-    batchScheduleHours: 6, // Batch deposits every 6 hours to reduce gas fees
+    batchScheduleHours: 1, // Batch deposits every 1 hour to reduce gas fees
   },
 }
 
