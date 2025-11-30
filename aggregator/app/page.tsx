@@ -26,7 +26,7 @@ export default function Home() {
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-500" />
+              <img src="/logo.png" alt="Growish" className="w-8 h-8" />
               <span className="text-xl font-bold text-white">Growish</span>
             </div>
             <ConnectWallet />
