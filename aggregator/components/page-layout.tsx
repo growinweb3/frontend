@@ -21,11 +21,7 @@ export function PageLayout({ children }: { children: React.ReactNode }) {
         {/* Header */}
         <header className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-cyan-500 flex items-center justify-center">
-              <svg className="w-6 h-6 text-[#050510]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-              </svg>
-            </div>
+            <img src="/logo.png" alt="Growish" className="w-10 h-10" />
             <span className="font-sans text-xl font-bold tracking-tight">Growish</span>
           </div>
           <div className="flex items-center gap-4">
